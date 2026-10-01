@@ -8,6 +8,7 @@ import {
   Mail,
   MapPin,
   Send,
+  Sparkles,
 } from "lucide-react";
 
 function LinkedInIcon({ size = 18 }: { size?: number }) {
@@ -26,6 +27,12 @@ function GitHubIcon({ size = 18 }: { size?: number }) {
   );
 }
 
+const quickTemplates = [
+  { label: "QA Testing Inquiry", subject: "QA Testing / Test Automation Inquiry" },
+  { label: "Contract / Remote Role", subject: "Remote QA / Software Tester Opportunity" },
+  { label: "Manual QA / Triage", subject: "Functional QA & Defect Reporting" },
+];
+
 export default function Contact() {
   const [copied, setCopied] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -35,6 +42,10 @@ export default function Contact() {
     navigator.clipboard.writeText("nirvaya22@gmail.com");
     setCopied(true);
     setTimeout(() => setCopied(false), 2400);
+  };
+
+  const handleSelectTemplate = (subject: string) => {
+    setFormData((prev) => ({ ...prev, subject }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -165,6 +176,31 @@ export default function Contact() {
               </div>
             ) : (
               <form className="contact-form" onSubmit={handleSubmit}>
+                {/* Quick Topic Chips */}
+                <div style={{ marginBottom: "16px" }}>
+                  <span style={{ fontSize: "0.72rem", color: "#94a3b8", display: "flex", alignItems: "center", gap: "5px", marginBottom: "8px" }}>
+                    <Sparkles size={12} style={{ color: "#38bdf8" }} /> Quick Topic:
+                  </span>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                    {quickTemplates.map((t) => (
+                      <button
+                        type="button"
+                        key={t.label}
+                        className="meta-chip"
+                        style={{
+                          cursor: "pointer",
+                          borderColor: formData.subject === t.subject ? "#38bdf8" : undefined,
+                          color: formData.subject === t.subject ? "#38bdf8" : undefined,
+                          background: formData.subject === t.subject ? "rgba(56, 189, 248, 0.1)" : undefined,
+                        }}
+                        onClick={() => handleSelectTemplate(t.subject)}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="form-field">
                   <label htmlFor="form-name">Your Name</label>
                   <input

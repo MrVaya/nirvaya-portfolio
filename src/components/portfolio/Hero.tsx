@@ -6,9 +6,13 @@ import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowDown,
   Check,
+  CheckCircle2,
   Copy,
+  Loader2,
   Mail,
   MapPin,
+  Play,
+  RotateCw,
   ShieldCheck,
   Terminal,
 } from "lucide-react";
@@ -38,9 +42,62 @@ const verifiedPills = [
   "Defect Reporting",
 ];
 
+type SuiteId = "playwright" | "postman" | "sql";
+
+interface TestSpec {
+  name: string;
+  time: string;
+}
+
+interface TestSuite {
+  tabName: string;
+  command: string;
+  runnerTitle: string;
+  specs: TestSpec[];
+}
+
+const testSuites: Record<SuiteId, TestSuite> = {
+  playwright: {
+    tabName: "Playwright E2E",
+    command: "npx playwright test --project=chromium",
+    runnerTitle: "playwright-runner — bash",
+    specs: [
+      { name: "e2e/auth-session.spec.ts", time: "18ms" },
+      { name: "e2e/navigation-flows.spec.ts", time: "24ms" },
+      { name: "e2e/form-validation.spec.ts", time: "32ms" },
+    ],
+  },
+  postman: {
+    tabName: "Postman API",
+    command: "newman run collections/auth-api.json",
+    runnerTitle: "newman-cli — node",
+    specs: [
+      { name: "GET /api/v1/auth/verify (200 OK)", time: "12ms" },
+      { name: "POST /api/v1/users/register (201 Created)", time: "22ms" },
+      { name: "POST /api/v1/auth/login [Negative 401]", time: "14ms" },
+    ],
+  },
+  sql: {
+    tabName: "SQL Checks",
+    command: "psql -f tests/db-verification.sql",
+    runnerTitle: "postgres-client — sql",
+    specs: [
+      { name: "SELECT count(*) FROM users (not null)", time: "8ms" },
+      { name: "CHECK foreign_keys(transactions)", time: "14ms" },
+      { name: "ASSERT zero_orphan_records()", time: "11ms" },
+    ],
+  },
+};
+
 export default function Hero() {
   const prefersReducedMotion = useReducedMotion() ?? false;
   const [copied, setCopied] = useState(false);
+
+  // Interactive Live Runner State
+  const [activeSuite, setActiveSuite] = useState<SuiteId>("playwright");
+  const [isRunning, setIsRunning] = useState(false);
+  const [completedSteps, setCompletedSteps] = useState(3);
+  const [progress, setProgress] = useState(100);
 
   const handleCopyEmail = () => {
     navigator.clipboard.writeText("nirvaya22@gmail.com");
@@ -48,11 +105,41 @@ export default function Hero() {
     setTimeout(() => setCopied(false), 2400);
   };
 
+  const handleRunSuite = (suiteKey = activeSuite) => {
+    if (isRunning) return;
+    setIsRunning(true);
+    setProgress(15);
+    setCompletedSteps(0);
+
+    setTimeout(() => {
+      setProgress(45);
+      setCompletedSteps(1);
+    }, 280);
+
+    setTimeout(() => {
+      setProgress(75);
+      setCompletedSteps(2);
+    }, 560);
+
+    setTimeout(() => {
+      setProgress(100);
+      setCompletedSteps(3);
+      setIsRunning(false);
+    }, 850);
+  };
+
+  const handleSelectSuite = (key: SuiteId) => {
+    setActiveSuite(key);
+    handleRunSuite(key);
+  };
+
   const fadeInUp = (delay: number) => ({
     initial: prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 16 },
     animate: { opacity: 1, y: 0 },
     transition: { delay, duration: prefersReducedMotion ? 0.2 : 0.45, ease: [0.16, 1, 0.3, 1] as const },
   });
+
+  const currentSuite = testSuites[activeSuite];
 
   return (
     <section className="hero-section section-shell" id="home">
@@ -153,7 +240,7 @@ export default function Hero() {
           </motion.div>
         </div>
 
-        {/* Right Column: Headshot & Verification Console */}
+        {/* Right Column: Headshot & Interactive Test Runner */}
         <motion.div
           className="hero-visual-container"
           initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
@@ -186,43 +273,114 @@ export default function Hero() {
             </div>
           </div>
 
-          {/* Realistic Test Execution Console */}
+          {/* Live Interactive Test Execution Console */}
           <div className="terminal-card">
+            {/* Header with Title and Dots */}
             <div className="terminal-header">
               <div className="terminal-dots">
                 <i className="dot-red" />
                 <i className="dot-yellow" />
                 <i className="dot-green" />
               </div>
-              <span className="terminal-title">playwright-runner — bash</span>
+              <span className="terminal-title">{currentSuite.runnerTitle}</span>
               <Terminal size={13} style={{ color: "#64748b" }} />
             </div>
+
+            {/* Interactive Suite Tabs Row */}
+            <div className="terminal-tabs-row">
+              {(Object.keys(testSuites) as SuiteId[]).map((key) => (
+                <button
+                  type="button"
+                  key={key}
+                  className={`terminal-tab-btn ${activeSuite === key ? "active" : ""}`}
+                  onClick={() => handleSelectSuite(key)}
+                  title={`Switch to ${testSuites[key].tabName}`}
+                >
+                  {testSuites[key].tabName}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                className="terminal-run-btn"
+                onClick={() => handleRunSuite()}
+                disabled={isRunning}
+                title="Execute test simulation"
+              >
+                {isRunning ? (
+                  <>
+                    <Loader2 size={11} className="animate-spin" /> Running
+                  </>
+                ) : (
+                  <>
+                    <Play size={11} fill="currentColor" /> Run Tests
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Live Progress Bar */}
+            <div className="terminal-progress-track">
+              <div
+                className="terminal-progress-bar"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+
+            {/* Terminal Body */}
             <div className="terminal-body">
               <div className="terminal-command">
-                $ <span>npx playwright test</span>
+                $ <span>{currentSuite.command}</span>
               </div>
-              <div style={{ color: "#94a3b8", fontSize: "0.7rem", marginBottom: "6px" }}>
-                Running regression suite...
+              <div style={{ color: "#94a3b8", fontSize: "0.7rem", marginBottom: "8px" }}>
+                {isRunning ? "Executing test runner..." : "Suite ready:"}
               </div>
-              <div className="terminal-row terminal-row-success">
-                <span>✓ e2e/auth-session.spec.ts</span>
-                <span className="terminal-time">passed</span>
-              </div>
-              <div className="terminal-row terminal-row-success">
-                <span>✓ e2e/navigation-flows.spec.ts</span>
-                <span className="terminal-time">passed</span>
-              </div>
-              <div className="terminal-row terminal-row-success">
-                <span>✓ api/payload-validation.spec.ts</span>
-                <span className="terminal-time">passed</span>
-              </div>
-              <div className="terminal-row terminal-row-success">
-                <span>✓ db/consistency-check.spec.ts</span>
-                <span className="terminal-time">passed</span>
-              </div>
+
+              {currentSuite.specs.map((spec, index) => {
+                const isPassed = completedSteps > index;
+                const isCurrent = completedSteps === index && isRunning;
+
+                return (
+                  <div
+                    key={spec.name}
+                    className={`terminal-row ${
+                      isPassed
+                        ? "terminal-row-success"
+                        : isCurrent
+                        ? "terminal-row-running"
+                        : "terminal-row-pending"
+                    }`}
+                  >
+                    <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      {isPassed ? (
+                        <CheckCircle2 size={13} />
+                      ) : isCurrent ? (
+                        <Loader2 size={12} className="animate-spin" />
+                      ) : (
+                        <span style={{ opacity: 0.5 }}>○</span>
+                      )}
+                      <span>{spec.name}</span>
+                    </span>
+                    <span className="terminal-time">
+                      {isPassed ? spec.time : isCurrent ? "running..." : "pending"}
+                    </span>
+                  </div>
+                );
+              })}
+
               <div className="terminal-summary-bar">
-                <span>Test run completed successfully</span>
-                <span>STATUS: PASSED</span>
+                <span>
+                  {isRunning
+                    ? "Running test suite..."
+                    : `PASS ${currentSuite.specs.length} specs · All passed`}
+                </span>
+                <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                  {isRunning ? (
+                    <span style={{ color: "#38bdf8" }}>RUNNING</span>
+                  ) : (
+                    <span>EXIT 0</span>
+                  )}
+                </span>
               </div>
             </div>
           </div>
