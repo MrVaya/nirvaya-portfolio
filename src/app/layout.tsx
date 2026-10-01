@@ -3,19 +3,19 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 const description =
-  "Nirvaya Ligal tests digital products, builds practical web experiences, and manages finance and operations with care.";
+  "Portfolio of Nirvaya Ligal, a QA Engineer based in Pokhara, Nepal, focused on manual testing, API testing, Playwright automation, TypeScript, Postman, SQL, and software quality assurance.";
 
 export const metadata: Metadata = {
-  title: "Nirvaya Ligal — QA, Web & Finance",
+  title: "Nirvaya Ligal | QA Engineer & Software Tester",
   description,
   openGraph: {
-    title: "Nirvaya Ligal — QA, Web & Finance",
+    title: "Nirvaya Ligal | QA Engineer & Software Tester",
     description,
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Nirvaya Ligal — QA, Web & Finance",
+    title: "Nirvaya Ligal | QA Engineer & Software Tester",
     description,
   },
 };

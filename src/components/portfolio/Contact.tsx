@@ -32,7 +32,7 @@ export default function Contact() {
   const [formData, setFormData] = useState({ name: "", email: "", subject: "", message: "" });
 
   const handleCopy = () => {
-    navigator.clipboard.writeText("nirvaya.ligal@gmail.com");
+    navigator.clipboard.writeText("nirvaya22@gmail.com");
     setCopied(true);
     setTimeout(() => setCopied(false), 2400);
   };
@@ -51,20 +51,19 @@ export default function Contact() {
           <div className="contact-info-side">
             <div className="eyebrow">
               <span />
-              07 / Contact
+              05 / Contact
             </div>
-            <h2>Let&apos;s talk about your product or operations.</h2>
+            <h2>Let&apos;s Connect.</h2>
             <p>
-              Whether you need automated regression coverage in Playwright, rigorous API
-              testing, or organized financial administration, I am open to discussing how I can
-              contribute to your team.
+              I am open to QA, software testing, and junior QA automation opportunities where I can
+              contribute to product quality while continuing to grow toward SDET and automation engineering.
             </p>
 
             <div className="contact-direct-links">
               <div className="contact-link-row" style={{ cursor: "pointer" }} onClick={handleCopy}>
                 <div className="contact-link-left">
                   <Mail size={18} />
-                  <span>nirvaya.ligal@gmail.com</span>
+                  <span>nirvaya22@gmail.com</span>
                 </div>
                 {copied ? (
                   <span style={{ color: "#34d399", fontSize: "0.75rem", display: "flex", alignItems: "center", gap: "4px" }}>
@@ -77,26 +76,26 @@ export default function Contact() {
 
               <a
                 className="contact-link-row"
-                href="https://www.linkedin.com"
+                href="https://www.linkedin.com/in/ligal-nirvaya/"
                 target="_blank"
                 rel="noreferrer"
               >
                 <div className="contact-link-left">
                   <LinkedInIcon size={18} />
-                  <span>LinkedIn Profile</span>
+                  <span>linkedin.com/in/ligal-nirvaya</span>
                 </div>
                 <ArrowRight size={15} style={{ color: "#64748b" }} />
               </a>
 
               <a
                 className="contact-link-row"
-                href="https://github.com"
+                href="https://github.com/MrVaya"
                 target="_blank"
                 rel="noreferrer"
               >
                 <div className="contact-link-left">
                   <GitHubIcon size={18} />
-                  <span>GitHub Repositories</span>
+                  <span>github.com/MrVaya</span>
                 </div>
                 <ArrowRight size={15} style={{ color: "#64748b" }} />
               </a>

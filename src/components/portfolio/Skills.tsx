@@ -1,52 +1,68 @@
-import { Code2, Landmark, TestTube2 } from "lucide-react";
+import {
+  CheckSquare,
+  Code2,
+  Cpu,
+  Database,
+  GitPullRequest,
+  Server,
+} from "lucide-react";
 
 const matrixGroups = [
   {
-    icon: Code2,
-    title: "Test Automation & Tooling",
-    copy: "Modern frameworks and developer tools used to build resilient, automated test pipelines.",
+    icon: CheckSquare,
+    title: "Manual & Functional QA",
+    copy: "Practical testing techniques ensuring web applications behave reliably across browsers.",
     accent: "#38bdf8",
     skills: [
-      "Playwright (TypeScript)",
-      "Postman API Automation",
-      "RESTful API Validation",
-      "JSON Schema Assertions",
-      "Git & Version Control",
-      "GitHub Actions (CI/CD Basics)",
-      "Chrome & Firefox DevTools",
-      "SQL Querying & DB Validation",
+      "Manual Testing",
+      "Functional Testing",
+      "Regression Testing",
+      "Smoke Testing",
+      "Exploratory Testing",
+      "Cross-Browser Testing",
+      "Edge-Case Identification",
     ],
   },
   {
-    icon: TestTube2,
-    title: "QA Methodologies & Strategy",
-    copy: "Systematic testing principles ensuring zero critical bugs escape into production environments.",
+    icon: Code2,
+    title: "Test Automation",
+    copy: "Writing and maintaining browser automation tests with TypeScript and Playwright.",
+    accent: "#60a5fa",
+    skills: [
+      "Playwright",
+      "TypeScript",
+      "JavaScript",
+      "Page Object Model (POM)",
+      "E2E Automation",
+      "Regression Automation",
+    ],
+  },
+  {
+    icon: Server,
+    title: "API Testing",
+    copy: "Validating REST endpoints, request payloads, response bodies, and HTTP status codes.",
     accent: "#818cf8",
     skills: [
-      "Manual & Exploratory QA",
-      "End-to-End Regression",
-      "Boundary Value Analysis",
-      "Equivalence Partitioning",
-      "Cross-Browser Testing",
-      "Mobile Viewport Validation",
-      "Defect Triage & Reporting",
-      "Jira & ClickUp Workflow",
+      "Postman",
+      "REST APIs",
+      "Swagger / OpenAPI",
+      "Status Code Validation",
+      "JSON Payload Verification",
+      "Negative Testing",
     ],
   },
   {
-    icon: Landmark,
-    title: "Admin, Finance & Compliance",
-    copy: "Disciplined operational control ensuring accurate ledgers, tax compliance, and audit readiness.",
+    icon: Database,
+    title: "Database & Tools",
+    copy: "Backend data verification queries, issue tracking, and version control workflows.",
     accent: "#34d399",
     skills: [
-      "Bank Statement Reconciliation",
-      "Petty Cash & Voucher Control",
-      "TDS / ETDS Tax Filing",
-      "Payroll Calculations",
-      "Financial Audit Preparation",
-      "Standard Operating Procedures (SOPs)",
-      "Expense Budget Tracking",
-      "Advanced Excel Modeling",
+      "SQL Queries",
+      "Database Verification",
+      "Jira",
+      "ClickUp",
+      "Git & GitHub",
+      "Browser DevTools",
     ],
   },
 ];
@@ -57,16 +73,18 @@ export default function Skills() {
       <div className="section-heading">
         <div className="eyebrow">
           <span />
-          03 / Competencies
+          03 / Skills
         </div>
-        <h2>Technical &amp; Operational Toolkit.</h2>
+        <h2>Technical QA Toolkit.</h2>
         <p>
-          Organized by domain: automated testing infrastructure, software verification
-          methodologies, and statutory financial operations.
+          Core tools and testing methods I use for manual testing, browser automation, API validation, and defect tracking.
         </p>
       </div>
 
-      <div className="skills-matrix-grid">
+      <div
+        className="skills-matrix-grid"
+        style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}
+      >
         {matrixGroups.map((group) => (
           <article className="matrix-card" key={group.title}>
             <div className="matrix-card-header">

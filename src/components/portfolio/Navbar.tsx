@@ -6,10 +6,10 @@ import { FileDown, Menu, X } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 const links = [
-  { label: "About", href: "#about" },
   { label: "Experience", href: "#experience" },
+  { label: "Projects", href: "#projects" },
   { label: "Skills", href: "#skills" },
-  { label: "QA Cases", href: "#projects" },
+  { label: "Education", href: "#education" },
   { label: "Contact", href: "#contact" },
 ];
 
@@ -37,7 +37,7 @@ export default function Navbar() {
           <span className="brand-mark">NL</span>
           <span className="brand-copy">
             <strong>Nirvaya Ligal</strong>
-            <small>QA Engineer · Finance Officer</small>
+            <small>QA Engineer · Software Tester</small>
           </span>
         </a>
 
@@ -52,7 +52,7 @@ export default function Navbar() {
         <div className="nav-actions">
           <span className="status-pill">
             <span className="status-pill-dot" />
-            <span>Open to Roles</span>
+            <span>Open to QA Roles</span>
           </span>
           <a
             className="btn btn-secondary"

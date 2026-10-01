@@ -1,4 +1,5 @@
 import {
+  Briefcase,
   CheckCircle2,
   FileSpreadsheet,
   ShieldCheck,
@@ -6,76 +7,78 @@ import {
 
 const roles = [
   {
-    role: "QA Engineer & Test Specialist",
+    role: "QA Engineer / Software Tester",
+    company: "Remote · Contract / Part-Time",
     category: "Software Quality Assurance",
-    type: "Remote · Contract / Part-Time",
-    timeline: "2023 — Present",
+    timeline: "Nov 2025 – Jan 2026 · May 2026 – Present",
     icon: ShieldCheck,
     accentColor: "#38bdf8",
     bullets: [
       {
-        title: "Automated E2E Regression Suites:",
-        text: "Designed and implemented automated end-to-end regression test suites in Playwright & TypeScript, decreasing manual testing overhead by 40% across major product releases.",
+        title: "Functional & Regression Testing:",
+        text: "Executed functional, smoke, and exploratory test cases across web applications, verifying requirements, UI behavior, and cross-browser compatibility.",
       },
       {
-        title: "RESTful API Validation & Contract Testing:",
-        text: "Built modular Postman test suites validating status codes, JSON schema compliance, response headers, and token authentication flows across 35+ backend endpoints.",
+        title: "REST API Testing:",
+        text: "Tested RESTful endpoints in Postman and Swagger, checking status codes, JSON request/response payloads, and error handling.",
       },
       {
-        title: "Manual Exploratory & Responsive Testing:",
-        text: "Conducted exhaustive exploratory testing across desktop browsers (Chrome, Firefox, Safari) and mobile viewports, identifying critical boundary conditions and UI regressions.",
+        title: "Playwright Automation:",
+        text: "Wrote and maintained automated regression tests in Playwright (TypeScript) using Page Object Model for core user flows like login, navigation, and forms.",
       },
       {
-        title: "High-Signal Defect Reporting:",
-        text: "Documented reproducible bug tickets in Jira and ClickUp complete with step-by-step reproduction steps, expected vs. actual outcomes, network logs, and video captures.",
+        title: "Database Verification:",
+        text: "Ran SQL queries to verify backend data persistence and ensure frontend actions properly updated database tables.",
+      },
+      {
+        title: "Defect Reporting & Retesting:",
+        text: "Logged clear, reproducible bug tickets in Jira and ClickUp with steps to reproduce, expected vs. actual behavior, and DevTools console/network logs, followed by retesting fixes.",
+      },
+      {
+        title: "Version Control:",
+        text: "Maintained test scripts and collaborated through Git and GitHub branching workflows.",
       },
     ],
     skills: [
+      "Manual Testing",
+      "Regression Testing",
       "Playwright",
       "TypeScript",
       "Postman",
-      "API Testing",
-      "Manual Testing",
-      "Regression",
+      "REST APIs",
+      "SQL",
       "Jira",
       "ClickUp",
-      "Browser DevTools",
+      "Git / GitHub",
     ],
   },
   {
     role: "Admin & Finance Officer",
-    category: "Finance & Operational Control",
-    type: "NGO & SME Sector · Part-Time",
-    timeline: "2022 — Present",
+    company: "CWES Nepal",
+    category: "Financial Administration & Operations",
+    timeline: "Jan 2026 – Present",
     icon: FileSpreadsheet,
     accentColor: "#34d399",
     bullets: [
       {
-        title: "Comprehensive Bank & Ledger Reconciliation:",
-        text: "Administered monthly bank statements, ledger entries, and petty cash disbursements, maintaining zero variance and 100% reconciliation accuracy across fiscal periods.",
+        title: "Bank Reconciliation:",
+        text: "Conducted regular monthly bank reconciliations, petty cash management, and disbursement oversight.",
       },
       {
-        title: "Tax Compliance (TDS / ETDS Filing):",
-        text: "Calculated statutory tax deductions at source (TDS / ETDS) in compliance with national tax rules, preparing error-free documentation and preventing regulatory penalties.",
+        title: "TDS / e-TDS Compliance:",
+        text: "Prepared statutory withholding tax (TDS / e-TDS) documentation in compliance with national tax guidelines.",
       },
       {
-        title: "Payroll & Disbursement Oversight:",
-        text: "Managed monthly employee payroll schedules, benefit calculations, and vendor invoice settlements with structured voucher verification trails.",
-      },
-      {
-        title: "Internal Audit Preparation & SOPs:",
-        text: "Established standard operating procedures for petty cash management, expense pre-approval, and organized transaction binders for external financial auditors.",
+        title: "Documentation & Audit Support:",
+        text: "Maintained employee payroll records, project expenditure logs, and voucher verification trails for internal and external audit reviews.",
       },
     ],
     skills: [
       "Bank Reconciliation",
-      "TDS / ETDS",
-      "Payroll Systems",
-      "Expense Tracking",
-      "Voucher Verification",
-      "Internal Controls",
-      "Advanced Excel",
-      "Financial Reporting",
+      "TDS / e-TDS",
+      "Financial Documentation",
+      "Audit Trail Maintenance",
+      "Payroll Support",
     ],
   },
 ];
@@ -86,18 +89,18 @@ export default function Experience() {
       <div className="section-heading">
         <div className="eyebrow eyebrow-accent">
           <span />
-          02 / Experience
+          01 / Experience
         </div>
-        <h2>Verified Professional Track Record.</h2>
+        <h2>Professional Experience.</h2>
         <p>
-          Demonstrated competence across software verification and operational accounting.
-          Grounded, measurable results built on systematic methodology and relentless attention to detail.
+          Hands-on experience across manual testing, API validation, test automation, database verification,
+          and defect management in remote software projects, supported by a professional background in administration and finance.
         </p>
       </div>
 
       <div className="experience-timeline">
         {roles.map((item) => (
-          <article className="timeline-card" key={item.role}>
+          <article className="timeline-card" key={item.role + item.company}>
             <div className="timeline-header-row">
               <div className="timeline-title-area">
                 <div
@@ -112,13 +115,14 @@ export default function Experience() {
                 </div>
                 <div>
                   <h3>{item.role}</h3>
-                  <p>{item.category}</p>
+                  <p style={{ color: "#e2e8f0", fontWeight: 500 }}>
+                    {item.company} · <span style={{ color: "#94a3b8", fontWeight: 400 }}>{item.category}</span>
+                  </p>
                 </div>
               </div>
 
               <div className="timeline-meta-tags">
                 <span className="meta-chip meta-chip-highlight">{item.timeline}</span>
-                <span className="meta-chip">{item.type}</span>
               </div>
             </div>
 

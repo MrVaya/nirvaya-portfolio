@@ -24,18 +24,18 @@ export default function Footer() {
           <span className="brand-mark">NL</span>
           <span className="brand-copy">
             <strong>Nirvaya Ligal</strong>
-            <small>QA Engineer · Finance Officer</small>
+            <small>QA Engineer · Software Tester</small>
           </span>
         </a>
 
         <div className="footer-copy">
-          © {new Date().getFullYear()} Nirvaya Ligal. Precision in code · Integrity in numbers.
+          © {new Date().getFullYear()} Nirvaya Ligal. Building confidence through systematic testing · Pokhara, Nepal.
         </div>
 
         <div className="footer-socials">
           <a
             className="footer-icon-btn"
-            href="https://www.linkedin.com"
+            href="https://www.linkedin.com/in/ligal-nirvaya/"
             target="_blank"
             rel="noreferrer"
             aria-label="LinkedIn"
@@ -44,7 +44,7 @@ export default function Footer() {
           </a>
           <a
             className="footer-icon-btn"
-            href="https://github.com"
+            href="https://github.com/MrVaya"
             target="_blank"
             rel="noreferrer"
             aria-label="GitHub"
