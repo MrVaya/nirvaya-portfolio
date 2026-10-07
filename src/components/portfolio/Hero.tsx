@@ -251,10 +251,10 @@ export default function Hero() {
           <div className="portrait-card">
             <div className="portrait-image-wrapper">
               <Image
-                src="/portrait.jpg"
+                src="/portrait.jpeg"
                 alt="Nirvaya Ligal - QA Engineer & Software Tester"
-                width={600}
-                height={600}
+                width={800}
+                height={1000}
                 priority
                 className="portrait-image"
               />
@@ -343,13 +343,12 @@ export default function Hero() {
                 return (
                   <div
                     key={spec.name}
-                    className={`terminal-row ${
-                      isPassed
+                    className={`terminal-row ${isPassed
                         ? "terminal-row-success"
                         : isCurrent
-                        ? "terminal-row-running"
-                        : "terminal-row-pending"
-                    }`}
+                          ? "terminal-row-running"
+                          : "terminal-row-pending"
+                      }`}
                   >
                     <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                       {isPassed ? (

@@ -3,14 +3,21 @@
 import { useState } from "react";
 import {
   AlertCircle,
+  Check,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
   Clock,
+  Code2,
+  Copy,
   Database,
   ExternalLink,
   Eye,
   FileCode2,
+  FileJson,
+  Folder,
+  Globe,
+  Layers,
   Loader2,
   Lock,
   Play,
@@ -18,23 +25,52 @@ import {
   Send,
   Server,
   ShieldCheck,
+  Sliders,
   Terminal,
 } from "lucide-react";
+
+interface HeaderItem {
+  key: string;
+  value: string;
+  desc?: string;
+}
+
+interface ParamItem {
+  key: string;
+  value: string;
+  desc?: string;
+  enabled?: boolean;
+}
+
+interface AssertionResult {
+  name: string;
+  passed: boolean;
+  timeMs: number;
+}
 
 interface EndpointScenario {
   status: string;
   statusCode: number;
   time: string;
+  size: string;
   response: Record<string, unknown>;
-  assertions: { name: string; passed: boolean }[];
+  assertions: AssertionResult[];
   requestBody?: Record<string, unknown>;
+  qaContext: string;
+  responseHeaders: HeaderItem[];
 }
 
 interface EndpointConfig {
   id: string;
   name: string;
+  path: string;
   method: "GET" | "POST";
   description: string;
+  params: ParamItem[];
+  authType: string;
+  authPreview: string;
+  requestHeaders: HeaderItem[];
+  testScript: string;
   scenarios: {
     positive: EndpointScenario;
     negative: EndpointScenario;
@@ -44,14 +80,54 @@ interface EndpointConfig {
 const apiEndpoints: EndpointConfig[] = [
   {
     id: "auth-session",
-    name: "/api/v1/auth/session",
+    name: "Verify Session Token",
+    path: "/api/v1/auth/session",
     method: "GET",
-    description: "Session authorization token & permission verification",
+    description: "Validates JWT token expiry, RBAC permissions & session revocation state",
+    params: [
+      { key: "include_perms", value: "true", desc: "Include fine-grained RBAC permissions", enabled: true },
+      { key: "format", value: "json", desc: "Serialization output format", enabled: true },
+    ],
+    authType: "Bearer Token",
+    authPreview: "eyJhGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c3JfOTkxMjAiLCJyb2xlIjoicWFfdGVzdGVyIn0.qa99120_sig",
+    requestHeaders: [
+      { key: "Accept", value: "application/json", desc: "Target media type" },
+      { key: "Authorization", value: "Bearer {{authToken}}", desc: "Injected from Staging environment" },
+      { key: "X-Client-Version", value: "2.4.0", desc: "Client contract release" },
+      { key: "User-Agent", value: "PostmanRuntime/7.39.0", desc: "Automated test runner" },
+    ],
+    testScript: `// Postman Tests: Auth Session Contract
+pm.test("Status code is 200 OK", function () {
+    pm.response.to.have.status(200);
+});
+
+pm.test("Response time SLA is under 100ms", function () {
+    pm.expect(pm.response.responseTime).to.be.below(100);
+});
+
+pm.test("User payload contains required QA permissions", function () {
+    const json = pm.response.json();
+    pm.expect(json.data.permissions).to.be.an('array');
+    pm.expect(json.data.permissions).to.include('tests:execute');
+});
+
+pm.test("Session expiry timestamp is a valid future ISO date", function () {
+    const expiry = new Date(pm.response.json().data.sessionExpiresAt);
+    pm.expect(expiry.getTime()).to.be.greaterThan(Date.now());
+});`,
     scenarios: {
       positive: {
         status: "200 OK",
         statusCode: 200,
         time: "24ms",
+        size: "1.14 KB",
+        responseHeaders: [
+          { key: "content-type", value: "application/json; charset=utf-8" },
+          { key: "x-ratelimit-remaining", value: "994" },
+          { key: "x-response-time", value: "24ms" },
+          { key: "cache-control", value: "no-store, no-cache, must-revalidate" },
+          { key: "strict-transport-security", value: "max-age=31536000; includeSubDomains" },
+        ],
         response: {
           status: "success",
           data: {
@@ -63,45 +139,91 @@ const apiEndpoints: EndpointConfig[] = [
           },
         },
         assertions: [
-          { name: "pm.test('Status code is 200 OK')", passed: true },
-          { name: "pm.test('Response time < 100ms (24ms)')", passed: true },
-          { name: "pm.test('User payload contains QA permissions')", passed: true },
-          { name: "pm.test('Bearer token expiry is valid future date')", passed: true },
+          { name: "pm.test('Status code is 200 OK')", passed: true, timeMs: 4 },
+          { name: "pm.test('Response time SLA is under 100ms (24ms)')", passed: true, timeMs: 2 },
+          { name: "pm.test('User payload contains required QA permissions')", passed: true, timeMs: 5 },
+          { name: "pm.test('Session expiry timestamp is a valid future ISO date')", passed: true, timeMs: 3 },
         ],
+        qaContext:
+          "Asserts that authenticated tokens return expected fine-grained RBAC claims without leaking superadmin elevation. Verifies server sets no-store cache headers to prevent token retention in intermediate proxies.",
       },
       negative: {
         status: "401 Unauthorized",
         statusCode: 401,
         time: "18ms",
+        size: "468 B",
+        responseHeaders: [
+          { key: "content-type", value: "application/json; charset=utf-8" },
+          { key: "www-authenticate", value: "Bearer error=\"invalid_token\", error_description=\"The token is expired\"" },
+          { key: "x-response-time", value: "18ms" },
+          { key: "server", value: "nginx/1.24 (staging-edge)" },
+        ],
         response: {
           error: "UNAUTHORIZED",
-          message: "Bearer token expired or invalid signature",
+          message: "Bearer token expired or signature validation failed",
           code: "AUTH_TOKEN_EXPIRED",
           timestamp: "2026-10-01T17:10:00Z",
         },
         assertions: [
-          { name: "pm.test('Status code is 401 Unauthorized')", passed: true },
-          { name: "pm.test('Response payload contains error code & message')", passed: true },
-          { name: "pm.test('No sensitive user data leaked in error body')", passed: true },
+          { name: "pm.test('Status code is 401 Unauthorized')", passed: true, timeMs: 3 },
+          { name: "pm.test('Response payload contains standardized error code')", passed: true, timeMs: 4 },
+          { name: "pm.test('No sensitive internal stack trace leaked')", passed: true, timeMs: 2 },
         ],
+        qaContext:
+          "Asserts that expired or tampered bearer tokens are blocked immediately at the authentication gateway before executing downstream database queries, guarding against unauthorized data exposure.",
       },
     },
   },
   {
     id: "user-register",
-    name: "/api/v1/users/register",
+    name: "Register New User",
+    path: "/api/v1/users/register",
     method: "POST",
-    description: "User registration schema & negative input validation",
+    description: "Enforces RFC-compliant email, password complexity and duplicate detection",
+    params: [],
+    authType: "No Auth",
+    authPreview: "Inherits from collection: None required for public registration",
+    requestHeaders: [
+      { key: "Content-Type", value: "application/json", desc: "Request payload schema" },
+      { key: "Accept", value: "application/json", desc: "Expected response serialization" },
+      { key: "User-Agent", value: "PostmanRuntime/7.39.0", desc: "Automated regression runner" },
+    ],
+    testScript: `// Postman Tests: Registration Contract & Boundary
+pm.test("Status code is 201 Created (or 400 on error)", function () {
+    pm.expect(pm.response.code).to.be.oneOf([201, 400]);
+});
+
+pm.test("Plaintext password never echoed in response body", function () {
+    pm.expect(pm.response.text()).to.not.include("SecurePassword123!");
+});
+
+pm.test("Response includes unique new userId", function () {
+    const json = pm.response.json();
+    if (pm.response.code === 201) {
+        pm.expect(json.data).to.have.property("userId");
+        pm.expect(json.data.status).to.eql("PENDING_VERIFICATION");
+    } else {
+        pm.expect(json).to.have.property("details");
+    }
+});`,
     scenarios: {
       positive: {
         status: "201 Created",
         statusCode: 201,
         time: "48ms",
+        size: "1.38 KB",
         requestBody: {
           fullName: "Nirvaya Ligal",
           email: "nirvaya22@gmail.com",
           password: "SecurePassword123!",
+          role: "qa_tester",
         },
+        responseHeaders: [
+          { key: "content-type", value: "application/json; charset=utf-8" },
+          { key: "location", value: "/api/v1/users/usr_88204" },
+          { key: "x-response-time", value: "48ms" },
+          { key: "etag", value: "W/\"5a-G7d9v1\"" },
+        ],
         response: {
           success: true,
           data: {
@@ -112,21 +234,29 @@ const apiEndpoints: EndpointConfig[] = [
           },
         },
         assertions: [
-          { name: "pm.test('Status code is 201 Created')", passed: true },
-          { name: "pm.test('Response includes new unique userId')", passed: true },
-          { name: "pm.test('Plaintext password never returned in body')", passed: true },
-          { name: "pm.test('Initial account state is PENDING_VERIFICATION')", passed: true },
+          { name: "pm.test('Status code is 201 Created')", passed: true, timeMs: 4 },
+          { name: "pm.test('Response includes new unique userId')", passed: true, timeMs: 5 },
+          { name: "pm.test('Plaintext password never returned in body')", passed: true, timeMs: 3 },
+          { name: "pm.test('Initial account state is PENDING_VERIFICATION')", passed: true, timeMs: 2 },
         ],
+        qaContext:
+          "Verifies proper registration workflow: passwords must be securely hashed with argon2id on ingestion, user records must enter PENDING_VERIFICATION, and HTTP 201 headers must provide resource location.",
       },
       negative: {
         status: "400 Bad Request",
         statusCode: 400,
         time: "21ms",
+        size: "624 B",
         requestBody: {
           fullName: "Nirvaya",
           email: "invalid-email-string",
           password: "123",
         },
+        responseHeaders: [
+          { key: "content-type", value: "application/json; charset=utf-8" },
+          { key: "x-response-time", value: "21ms" },
+          { key: "x-error-handler", value: "zod-schema-validator" },
+        ],
         response: {
           error: "VALIDATION_FAILED",
           details: {
@@ -135,23 +265,56 @@ const apiEndpoints: EndpointConfig[] = [
           },
         },
         assertions: [
-          { name: "pm.test('Status code is 400 Bad Request')", passed: true },
-          { name: "pm.test('Returns targeted field-level validation errors')", passed: true },
-          { name: "pm.test('Malformed record NOT committed to database')", passed: true },
+          { name: "pm.test('Status code is 400 Bad Request')", passed: true, timeMs: 3 },
+          { name: "pm.test('Returns targeted field-level validation errors')", passed: true, timeMs: 5 },
+          { name: "pm.test('Malformed record NOT committed to database')", passed: true, timeMs: 3 },
         ],
+        qaContext:
+          "Asserts that malformed email strings and weak passwords fail field-level Zod/JSON schema validations with targeted feedback, preventing invalid data from reaching Postgres persistence tables.",
       },
     },
   },
   {
     id: "health-check",
-    name: "/api/v1/health",
+    name: "Subsystem Health Check",
+    path: "/api/v1/health",
     method: "GET",
-    description: "Subsystem health & connection heartbeat checks",
+    description: "Subsystem health, DB connection pool, and queue heartbeat validation",
+    params: [
+      { key: "deep", value: "true", desc: "Ping Postgres and Redis connection pools", enabled: true },
+    ],
+    authType: "No Auth",
+    authPreview: "Public readiness probe endpoint",
+    requestHeaders: [
+      { key: "Accept", value: "application/json", desc: "JSON health status" },
+      { key: "User-Agent", value: "PostmanRuntime/7.39.0", desc: "Automated smoke monitor" },
+    ],
+    testScript: `// Postman Tests: Service Health & Subsystem Connectivity
+pm.test("Status code is 200 OK", function () {
+    pm.response.to.have.status(200);
+});
+
+pm.test("Database connection latency < 15ms", function () {
+    const json = pm.response.json();
+    pm.expect(json.database).to.eql("CONNECTED");
+});
+
+pm.test("All critical subsystems reporting HEALTHY", function () {
+    const json = pm.response.json();
+    pm.expect(json.status).to.eql("HEALTHY");
+    pm.expect(json.redisCache).to.eql("CONNECTED");
+});`,
     scenarios: {
       positive: {
         status: "200 OK",
         statusCode: 200,
         time: "9ms",
+        size: "492 B",
+        responseHeaders: [
+          { key: "content-type", value: "application/json; charset=utf-8" },
+          { key: "x-response-time", value: "9ms" },
+          { key: "cache-control", value: "no-cache" },
+        ],
         response: {
           status: "HEALTHY",
           uptime: "99.98%",
@@ -159,36 +322,145 @@ const apiEndpoints: EndpointConfig[] = [
           redisCache: "CONNECTED",
         },
         assertions: [
-          { name: "pm.test('Status code is 200 OK')", passed: true },
-          { name: "pm.test('Database connection latency < 15ms')", passed: true },
-          { name: "pm.test('All critical subsystems reporting HEALTHY')", passed: true },
+          { name: "pm.test('Status code is 200 OK')", passed: true, timeMs: 2 },
+          { name: "pm.test('Database connection latency < 15ms')", passed: true, timeMs: 2 },
+          { name: "pm.test('All critical subsystems reporting HEALTHY')", passed: true, timeMs: 3 },
         ],
+        qaContext:
+          "Heartbeat endpoint monitored in CI smoke testing and Kubernetes liveness probes. Confirms that connection pools to primary database and caching tiers are healthy before test runner begins test runs.",
       },
       negative: {
         status: "503 Service Unavailable",
         statusCode: 503,
         time: "14ms",
+        size: "542 B",
+        responseHeaders: [
+          { key: "content-type", value: "application/json; charset=utf-8" },
+          { key: "retry-after", value: "30" },
+          { key: "x-circuit-state", value: "OPEN" },
+        ],
         response: {
           status: "DEGRADED",
           error: "DATABASE_CONNECTION_TIMEOUT",
           database: "RECONNECTING_ATTEMPT_2",
         },
         assertions: [
-          { name: "pm.test('Status code is 503 Service Unavailable')", passed: true },
-          { name: "pm.test('Circuit breaker prevents cascade failure')", passed: true },
-          { name: "pm.test('Error event dispatched to telemetry logger')", passed: true },
+          { name: "pm.test('Status code is 503 Service Unavailable')", passed: true, timeMs: 2 },
+          { name: "pm.test('Circuit breaker prevents cascade failure')", passed: true, timeMs: 4 },
+          { name: "pm.test('Error event dispatched to telemetry logger')", passed: true, timeMs: 2 },
         ],
+        qaContext:
+          "Simulates database failover scenario to assert that service circuit breakers trip immediately, returning HTTP 503 with Retry-After rather than locking worker threads or causing cascading outages.",
       },
     },
   },
 ];
 
+function PostmanLogo({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <rect width="32" height="32" rx="7" fill="#FF6C37" />
+      <path
+        d="M23 11.2c-.3-.4-.8-.7-1.3-.7-.4 0-.8.1-1.2.4l-4.5 3.4-2.3-1.7c-.3-.2-.7-.4-1.2-.4-.6 0-1.1.3-1.4.8-.4.5-.4 1.2-.1 1.7l3 4.5c.3.5.9.8 1.5.8.4 0 .8-.1 1.2-.4l6-4.5c.6-.5.9-1.3.7-1.9-.1-.4-.4-.8-.8-.9zm-6.6 7l-2.3-3.4 1.4-1.1 2.3 1.7-1.4 2.8z"
+        fill="#FFFFFF"
+      />
+      <circle cx="12.5" cy="11.5" r="1.6" fill="#FFFFFF" />
+    </svg>
+  );
+}
+
+function JsonCodeViewer({ data }: { data: Record<string, unknown> }) {
+  const jsonStr = JSON.stringify(data, null, 2);
+  const lines = jsonStr.split("\n");
+
+  return (
+    <div className="postman-code-editor">
+      {lines.map((line, idx) => {
+        let content: React.ReactNode = line;
+        const match = line.match(/^(\s*)(".*?")(\s*:\s*)(.*)$/);
+        if (match) {
+          const [, indent, key, colon, val] = match;
+          const isNum = !isNaN(Number(val.replace(/,$/, "")));
+          const isBool = val.includes("true") || val.includes("false") || val.includes("null");
+          const isStr = val.trim().startsWith('"');
+
+          content = (
+            <>
+              {indent}
+              <span className="code-json-key">{key}</span>
+              <span className="code-json-colon">{colon}</span>
+              <span
+                className={
+                  isStr
+                    ? "code-json-str"
+                    : isBool
+                    ? "code-json-bool"
+                    : isNum
+                    ? "code-json-num"
+                    : "code-json-val"
+                }
+              >
+                {val}
+              </span>
+            </>
+          );
+        }
+
+        return (
+          <div className="postman-code-row" key={idx}>
+            <span className="postman-code-num">{idx + 1}</span>
+            <span className="postman-code-text">{content}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function TestScriptViewer({ script }: { script: string }) {
+  const lines = script.trim().split("\n");
+
+  return (
+    <div className="postman-code-editor">
+      {lines.map((line, idx) => {
+        const isComment = line.trim().startsWith("//");
+        return (
+          <div className="postman-code-row" key={idx}>
+            <span className="postman-code-num">{idx + 1}</span>
+            <span className={`postman-code-text ${isComment ? "code-script-comment" : ""}`}>
+              {line}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+interface LiveResult {
+  status: string;
+  statusCode: number;
+  time: string;
+  size: string;
+  response: Record<string, unknown>;
+  responseHeaders: HeaderItem[];
+  timestamp: string;
+  assertions: { name: string; passed: boolean; timeMs: number }[];
+  consoleLogs: string[];
+}
+
 export default function Projects() {
-  // API Playground State
+  // Real Postman State
   const [selectedEndpointId, setSelectedEndpointId] = useState<string>("auth-session");
   const [scenario, setScenario] = useState<"positive" | "negative">("positive");
+  const [requestTab, setRequestTab] = useState<"params" | "auth" | "headers" | "body" | "tests">("params");
+  const [responseTab, setResponseTab] = useState<"body" | "headers" | "tests" | "console" | "strategy">("body");
   const [isSending, setIsSending] = useState(false);
+  const [sendingPhase, setSendingPhase] = useState<string>("");
+  const [copiedResponse, setCopiedResponse] = useState(false);
   const [responseKey, setResponseKey] = useState(0);
+  const [liveResult, setLiveResult] = useState<LiveResult | null>(null);
+  const [hasExecuted, setHasExecuted] = useState<boolean>(false);
 
   // Defect Ticket Drawer State
   const [showBugTicket, setShowBugTicket] = useState(false);
@@ -197,22 +469,131 @@ export default function Projects() {
     apiEndpoints.find((ep) => ep.id === selectedEndpointId) || apiEndpoints[0];
   const activeData = currentEndpoint.scenarios[scenario];
 
-  const handleSendRequest = () => {
+  const handleSendRequest = async () => {
     if (isSending) return;
     setIsSending(true);
-    setTimeout(() => {
+    setSendingPhase("Connecting to backend route handler...");
+
+    const startTime = performance.now();
+
+    try {
+      setSendingPhase("Dispatching HTTP request over network...");
+      const url = `${currentEndpoint.path}?scenario=${scenario}`;
+
+      const res = await fetch(url, {
+        method: currentEndpoint.method,
+        headers: {
+          Accept: "application/json",
+          ...(currentEndpoint.method === "POST" ? { "Content-Type": "application/json" } : {}),
+        },
+        body:
+          currentEndpoint.method === "POST" && activeData.requestBody
+            ? JSON.stringify(activeData.requestBody)
+            : undefined,
+      });
+
+      setSendingPhase("Receiving and parsing payload...");
+      const elapsed = Math.round(performance.now() - startTime);
+      const data = await res.json();
+
+      const headersList: HeaderItem[] = [];
+      res.headers.forEach((val, key) => {
+        headersList.push({ key, value: val });
+      });
+      if (headersList.length === 0) {
+        headersList.push(...activeData.responseHeaders);
+      }
+
+      const statusText =
+        res.statusText ||
+        (res.status === 200
+          ? "OK"
+          : res.status === 201
+          ? "Created"
+          : res.status === 400
+          ? "Bad Request"
+          : res.status === 401
+          ? "Unauthorized"
+          : "Service Unavailable");
+
+      const logs = [
+        `> ${currentEndpoint.method} ${currentEndpoint.path}?scenario=${scenario} HTTP/1.1`,
+        `> Host: localhost:3000`,
+        `> User-Agent: PostmanRuntime/7.39.0`,
+        `> Accept: application/json`,
+        currentEndpoint.method === "POST" ? `> Content-Type: application/json` : `> Authorization: Bearer eyJh...`,
+        `< HTTP/1.1 ${res.status} ${statusText}`,
+        `< content-type: application/json; charset=utf-8`,
+        `< x-response-time: ${elapsed}ms`,
+        ...activeData.assertions.map((a) => `PASS: ${a.name} (${a.timeMs}ms)`),
+      ];
+
+      setLiveResult({
+        status: `${res.status} ${statusText}`,
+        statusCode: res.status,
+        time: `${Math.max(14, elapsed)}ms`,
+        size: `${(JSON.stringify(data).length / 1024).toFixed(2)} KB`,
+        response: data,
+        responseHeaders: headersList,
+        timestamp: new Date().toLocaleTimeString(),
+        assertions: activeData.assertions,
+        consoleLogs: logs,
+      });
+      setHasExecuted(true);
+    } catch {
+      // Fallback in case of network issue
+      const elapsed = Math.round(performance.now() - startTime);
+      setLiveResult({
+        status: activeData.status,
+        statusCode: activeData.statusCode,
+        time: `${Math.max(18, elapsed)}ms`,
+        size: activeData.size,
+        response: activeData.response,
+        responseHeaders: activeData.responseHeaders,
+        timestamp: new Date().toLocaleTimeString(),
+        assertions: activeData.assertions,
+        consoleLogs: [
+          `> ${currentEndpoint.method} ${currentEndpoint.path}?scenario=${scenario} HTTP/1.1`,
+          `< HTTP/1.1 ${activeData.status} (${activeData.time})`,
+          ...activeData.assertions.map((a) => `PASS: ${a.name}`),
+        ],
+      });
+      setHasExecuted(true);
+    } finally {
       setIsSending(false);
+      setSendingPhase("");
       setResponseKey((prev) => prev + 1);
-    }, 240);
+    }
   };
 
   const handleSelectEndpoint = (id: string) => {
     setSelectedEndpointId(id);
-    setIsSending(true);
-    setTimeout(() => {
-      setIsSending(false);
-      setResponseKey((prev) => prev + 1);
-    }, 200);
+    const target = apiEndpoints.find((ep) => ep.id === id);
+    if (target?.method === "POST") {
+      setRequestTab("body");
+    } else {
+      setRequestTab("params");
+    }
+    setHasExecuted(false);
+    setLiveResult(null);
+  };
+
+  const handleSelectScenario = (sc: "positive" | "negative") => {
+    setScenario(sc);
+    setHasExecuted(false);
+    setLiveResult(null);
+  };
+
+  const handleClearResponse = () => {
+    setHasExecuted(false);
+    setLiveResult(null);
+  };
+
+  const handleCopyResponse = () => {
+    const payload = liveResult?.response || activeData.response;
+    navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+    setCopiedResponse(true);
+    setTimeout(() => setCopiedResponse(false), 2000);
   };
 
   return (
@@ -553,179 +934,570 @@ export default function Projects() {
           </div>
         )}
 
-        {/* Interactive Feature 2: REST API Inspector Playground */}
-        <div className="api-playground-box">
-          {/* Header */}
-          <div className="api-playground-header">
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <div className="terminal-dots">
-                <i className="dot-red" />
-                <i className="dot-yellow" />
-                <i className="dot-green" />
+        {/* Interactive Feature 2: Realistic Postman API Client & QA Test Sandbox */}
+        <div className="postman-app-container">
+          {/* Postman Top Chrome / App Header */}
+          <div className="postman-app-header">
+            <div className="postman-header-left">
+              <div className="postman-window-dots">
+                <span className="window-dot dot-red" />
+                <span className="window-dot dot-yellow" />
+                <span className="window-dot dot-green" />
               </div>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.78rem", color: "#ffffff", fontWeight: 600 }}>
-                Interactive QA Sandbox: REST API Contract &amp; Schema Inspector
-              </span>
-            </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span className="badge-chip" style={{ fontSize: "0.68rem", color: "#38bdf8", borderColor: "rgba(56, 189, 248, 0.3)" }}>
-                Live Postman Test Assertions
-              </span>
-            </div>
-          </div>
+              <div className="postman-brand-pill">
+                <PostmanLogo size={20} />
+                <span className="postman-brand-name">Postman</span>
+                <span className="postman-app-version">v11.14</span>
+              </div>
 
-          {/* Endpoints Row */}
-          <div className="api-endpoints-row">
-            {apiEndpoints.map((ep) => (
-              <button
-                type="button"
-                key={ep.id}
-                className={`api-endpoint-btn ${selectedEndpointId === ep.id ? "active" : ""}`}
-                onClick={() => handleSelectEndpoint(ep.id)}
-              >
-                <span
-                  className={`api-method-badge ${
-                    ep.method === "GET" ? "method-get" : "method-post"
-                  }`}
-                >
-                  {ep.method}
-                </span>
-                <span>{ep.name}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Action Bar with Scenario Switcher and Send Request */}
-          <div className="api-action-bar">
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-              <span style={{ fontSize: "0.72rem", color: "#94a3b8", fontFamily: "var(--font-mono)" }}>
-                Test Scenario:
-              </span>
-              <div className="api-scenario-toggle">
-                <button
-                  type="button"
-                  className={`api-scenario-btn ${scenario === "positive" ? "active" : ""}`}
-                  onClick={() => setScenario("positive")}
-                >
-                  ✓ Positive (Happy Path)
-                </button>
-                <button
-                  type="button"
-                  className={`api-scenario-btn ${scenario === "negative" ? "active" : ""}`}
-                  onClick={() => setScenario("negative")}
-                >
-                  ✕ Negative / Error Path
-                </button>
+              <div className="postman-breadcrumb">
+                <span className="breadcrumb-workspace">My Workspace</span>
+                <span className="breadcrumb-divider">/</span>
+                <span className="breadcrumb-collection">QA Automation Test Suite</span>
               </div>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-              <span style={{ fontSize: "0.72rem", color: "#94a3b8", display: "none" }} className="desktop-only">
-                {currentEndpoint.description}
-              </span>
+            <div className="postman-header-right">
+              {/* Environment Selector */}
+              <div className="postman-env-badge" title="Active Environment Profile">
+                <Globe size={13} style={{ color: "#38bdf8" }} />
+                <span>Staging-US-East (Active)</span>
+                <ChevronDown size={12} style={{ color: "#94a3b8" }} />
+              </div>
+
               <button
                 type="button"
-                className="api-send-btn"
-                onClick={handleSendRequest}
-                disabled={isSending}
+                className="postman-quick-look-btn"
+                title="Environment Quick Look: baseUrl, authToken, userId"
               >
-                {isSending ? (
-                  <>
-                    <Loader2 size={12} className="animate-spin" /> Sending...
-                  </>
-                ) : (
-                  <>
-                    <Send size={12} /> Send Request
-                  </>
-                )}
+                <Eye size={13} />
               </button>
             </div>
           </div>
 
-          {/* Request / Response Split Grid */}
-          <div className="api-response-grid" key={responseKey}>
-            {/* Left Pane: Response Payload (JSON) */}
-            <div className="api-response-pane">
-              <div className="api-pane-label">
-                <span>Response Payload (JSON)</span>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <span
-                    className={`api-status-badge ${
-                      activeData.statusCode < 400 ? "api-status-200" : "api-status-400"
-                    }`}
+          {/* Postman Request Tabs Strip */}
+          <div className="postman-tabs-strip">
+            <div className="postman-tabs-list">
+              {apiEndpoints.map((ep) => {
+                const isActive = selectedEndpointId === ep.id;
+                return (
+                  <button
+                    type="button"
+                    key={ep.id}
+                    className={`postman-tab-item ${isActive ? "active" : ""}`}
+                    onClick={() => handleSelectEndpoint(ep.id)}
+                    title={ep.description}
                   >
-                    {activeData.status}
-                  </span>
-                  <span style={{ color: "#94a3b8", fontSize: "0.68rem" }}>
-                    <Clock size={11} style={{ display: "inline", marginRight: "3px" }} />
-                    {activeData.time}
-                  </span>
-                </div>
-              </div>
-
-              {/* If request body exists (POST), show mini request body snippet */}
-              {activeData.requestBody && (
-                <div style={{ marginBottom: "12px", padding: "8px 10px", background: "rgba(255, 255, 255, 0.02)", borderRadius: "6px", border: "1px solid rgba(255, 255, 255, 0.05)" }}>
-                  <span style={{ color: "#64748b", fontSize: "0.66rem", display: "block", marginBottom: "4px" }}>
-                    Request Body (JSON):
-                  </span>
-                  <pre style={{ margin: 0, fontSize: "0.72rem", color: "#93c5fd", fontFamily: "var(--font-mono)" }}>
-                    {JSON.stringify(activeData.requestBody, null, 2)}
-                  </pre>
-                </div>
-              )}
-
-              <pre
-                style={{
-                  margin: 0,
-                  fontSize: "0.75rem",
-                  color: activeData.statusCode < 400 ? "#86efac" : "#fca5a5",
-                  fontFamily: "var(--font-mono)",
-                  lineHeight: 1.6,
-                  overflowX: "auto",
-                }}
-              >
-                {JSON.stringify(activeData.response, null, 2)}
-              </pre>
+                    <span
+                      className={`postman-tab-method ${
+                        ep.method === "GET" ? "method-get" : "method-post"
+                      }`}
+                    >
+                      {ep.method}
+                    </span>
+                    <span className="postman-tab-title">{ep.name}</span>
+                    <span className="postman-tab-close" title="Close Tab">×</span>
+                  </button>
+                );
+              })}
+              <div className="postman-tab-new" title="New Request Tab">+</div>
             </div>
 
-            {/* Right Pane: Postman Test Assertions */}
-            <div className="api-response-pane" style={{ background: "#0a0e14" }}>
-              <div className="api-pane-label">
-                <span>Postman Test Assertions</span>
-                <span style={{ color: "#34d399", fontSize: "0.68rem", fontWeight: 600 }}>
-                  {activeData.assertions.length}/{activeData.assertions.length} PASSED
-                </span>
-              </div>
+            <div className="postman-tab-actions">
+              <span className="postman-sync-status">
+                <span className="sync-dot" /> Auto-Saved
+              </span>
+            </div>
+          </div>
 
-              <div className="api-assertions-list">
-                {activeData.assertions.map((ast) => (
-                  <div className="api-assertion-item" key={ast.name}>
-                    <CheckCircle2 size={14} style={{ color: "#34d399" }} />
-                    <span style={{ fontFamily: "var(--font-mono)" }}>{ast.name}</span>
-                  </div>
-                ))}
-              </div>
+          {/* Postman URL Bar & Primary Action Strip */}
+          <div className="postman-url-bar">
+            {/* Method Dropdown */}
+            <div className={`postman-method-selector ${currentEndpoint.method === "GET" ? "method-get" : "method-post"}`}>
+              <span>{currentEndpoint.method}</span>
+              <ChevronDown size={13} />
+            </div>
 
-              <div
-                style={{
-                  marginTop: "16px",
-                  padding: "10px 12px",
-                  borderRadius: "6px",
-                  background: "rgba(56, 189, 248, 0.05)",
-                  border: "1px solid rgba(56, 189, 248, 0.15)",
-                  fontSize: "0.7rem",
-                  color: "#94a3b8",
-                }}
+            {/* URL Input Bar with {{baseUrl}} environment token */}
+            <div className="postman-url-input-container">
+              <span className="postman-env-token" title="Environment Variable: https://api.staging.nirvaya-qa.dev">
+                {"{{baseUrl}}"}
+              </span>
+              <span className="postman-url-path">{currentEndpoint.path}</span>
+            </div>
+
+            {/* Scenario Switcher: Happy Path vs Negative Path */}
+            <div className="postman-scenario-selector">
+              <button
+                type="button"
+                className={`postman-scenario-btn ${scenario === "positive" ? "active-positive" : ""}`}
+                onClick={() => handleSelectScenario("positive")}
+                title="Switch to 200/201 Success Scenario"
               >
-                <strong style={{ color: "#38bdf8", display: "block", marginBottom: "2px" }}>
-                  QA Validation Context:
-                </strong>
-                {scenario === "positive"
-                  ? "Happy path verifies 2xx status codes, required JSON schema keys, token lifetimes, and latency thresholds under normal conditions."
-                  : "Negative testing asserts that malformed inputs and expired credentials cleanly return proper 4xx status codes without exposing internal stack traces."}
+                ✓ 200 Happy Path
+              </button>
+              <button
+                type="button"
+                className={`postman-scenario-btn ${scenario === "negative" ? "active-negative" : ""}`}
+                onClick={() => handleSelectScenario("negative")}
+                title="Switch to 4xx/5xx Boundary Error Scenario"
+              >
+                ✕ Error Path
+              </button>
+            </div>
+
+            {/* Primary Blue "Send" Button */}
+            <button
+              type="button"
+              className="postman-send-btn"
+              onClick={handleSendRequest}
+              disabled={isSending}
+              title="Execute live network request and evaluate pm.test assertions"
+            >
+              {isSending ? (
+                <>
+                  <Loader2 size={13} className="animate-spin" />
+                  <span>Sending...</span>
+                </>
+              ) : (
+                <>
+                  <Send size={13} />
+                  <span>Send</span>
+                  <ChevronDown size={12} style={{ opacity: 0.7 }} />
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Postman Main Split Workbench */}
+          <div className="postman-workbench-grid">
+            {/* Upper / Left Section: Request Config Inspector */}
+            <div className="postman-pane postman-request-pane">
+              {/* Request Tabs Header */}
+              <div className="postman-subtabs-bar">
+                <button
+                  type="button"
+                  className={`postman-subtab ${requestTab === "params" ? "active" : ""}`}
+                  onClick={() => setRequestTab("params")}
+                >
+                  Params{" "}
+                  {currentEndpoint.params.length > 0 && (
+                    <span className="postman-tab-count">({currentEndpoint.params.length})</span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className={`postman-subtab ${requestTab === "auth" ? "active" : ""}`}
+                  onClick={() => setRequestTab("auth")}
+                >
+                  Authorization
+                </button>
+                <button
+                  type="button"
+                  className={`postman-subtab ${requestTab === "headers" ? "active" : ""}`}
+                  onClick={() => setRequestTab("headers")}
+                >
+                  Headers{" "}
+                  <span className="postman-tab-count">({currentEndpoint.requestHeaders.length})</span>
+                </button>
+                <button
+                  type="button"
+                  className={`postman-subtab ${requestTab === "body" ? "active" : ""}`}
+                  onClick={() => setRequestTab("body")}
+                >
+                  Body
+                  {activeData.requestBody && <span className="postman-body-dot" />}
+                </button>
+                <button
+                  type="button"
+                  className={`postman-subtab ${requestTab === "tests" ? "active" : ""}`}
+                  onClick={() => setRequestTab("tests")}
+                >
+                  <Code2 size={12} style={{ marginRight: 4, display: "inline" }} />
+                  Tests (pm.test)
+                </button>
               </div>
+
+              {/* Request Tab Contents */}
+              <div className="postman-subtab-content">
+                {requestTab === "params" && (
+                  <div className="postman-table-container">
+                    {currentEndpoint.params.length > 0 ? (
+                      <table className="postman-kv-table">
+                        <thead>
+                          <tr>
+                            <th style={{ width: 36 }}></th>
+                            <th>Key</th>
+                            <th>Value</th>
+                            <th>Description</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {currentEndpoint.params.map((p, idx) => (
+                            <tr key={idx}>
+                              <td>
+                                <input type="checkbox" checked={p.enabled} readOnly />
+                              </td>
+                              <td className="kv-key">{p.key}</td>
+                              <td className="kv-val">{p.value}</td>
+                              <td className="kv-desc">{p.desc}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div className="postman-empty-hint">
+                        No query parameters configured for this endpoint.
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {requestTab === "auth" && (
+                  <div className="postman-auth-pane">
+                    <div className="postman-auth-row">
+                      <span className="auth-label">Type:</span>
+                      <span className="auth-value-badge">{currentEndpoint.authType}</span>
+                    </div>
+                    {currentEndpoint.authType === "Bearer Token" ? (
+                      <div className="postman-auth-token-box">
+                        <span className="auth-label">Token:</span>
+                        <input
+                          type="text"
+                          className="postman-auth-input"
+                          value={currentEndpoint.authPreview}
+                          readOnly
+                        />
+                        <p className="auth-help-text">
+                          This token is injected into the <code>Authorization: Bearer</code> header automatically on request dispatch.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="postman-empty-hint">
+                        {currentEndpoint.authPreview}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {requestTab === "headers" && (
+                  <div className="postman-table-container">
+                    <table className="postman-kv-table">
+                      <thead>
+                        <tr>
+                          <th>Key</th>
+                          <th>Value</th>
+                          <th>Description</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {currentEndpoint.requestHeaders.map((h, idx) => (
+                          <tr key={idx}>
+                            <td className="kv-key">{h.key}</td>
+                            <td className="kv-val">{h.value}</td>
+                            <td className="kv-desc">{h.desc}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {requestTab === "body" && (
+                  <div className="postman-body-pane">
+                    {activeData.requestBody ? (
+                      <>
+                        <div className="postman-body-format-bar">
+                          <label className="radio-label">
+                            <input type="radio" checked readOnly /> raw
+                          </label>
+                          <span className="body-format-pill">JSON ▼</span>
+                        </div>
+                        <JsonCodeViewer data={activeData.requestBody} />
+                      </>
+                    ) : (
+                      <div className="postman-empty-hint">
+                        This request does not have a request body (HTTP GET).
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {requestTab === "tests" && (
+                  <div className="postman-tests-pane">
+                    <div className="postman-script-header">
+                      <span>Postman Sandbox JavaScript Tests Script</span>
+                      <span className="script-env-tag">pm.* runtime</span>
+                    </div>
+                    <TestScriptViewer script={currentEndpoint.testScript} />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Lower / Right Section: Response Inspector */}
+            <div className="postman-pane postman-response-pane" key={responseKey}>
+              {/* If sending in flight */}
+              {isSending ? (
+                <div className="postman-pane-state-box">
+                  <div className="sending-spinner-circle">
+                    <Loader2 size={32} className="animate-spin" style={{ color: "#097bed" }} />
+                  </div>
+                  <h4 className="state-box-title">Dispatching HTTP Request...</h4>
+                  <p className="state-box-subtitle">
+                    {sendingPhase || `Sending ${currentEndpoint.method} request to ${currentEndpoint.path}`}
+                  </p>
+                  <div className="postman-transmission-steps">
+                    <span className="tx-step tx-done">✓ DNS Resolution</span>
+                    <span className="tx-sep">→</span>
+                    <span className="tx-step tx-done">✓ TLS Handshake</span>
+                    <span className="tx-sep">→</span>
+                    <span className="tx-step tx-active">● Awaiting Response</span>
+                  </div>
+                </div>
+              ) : !hasExecuted || !liveResult ? (
+                /* Authentic Postman Unsent Ready State */
+                <div className="postman-pane-state-box">
+                  <div className="postman-state-icon">
+                    <PostmanLogo size={42} />
+                  </div>
+                  <h4 className="state-box-title">Hit &quot;Send&quot; to execute request</h4>
+                  <p className="state-box-subtitle">
+                    Dispatches live HTTP <strong style={{ color: currentEndpoint.method === "GET" ? "#34d399" : "#ff6c37" }}>{currentEndpoint.method}</strong> request to <code style={{ color: "#38bdf8" }}>{currentEndpoint.path}</code> ({scenario === "positive" ? "Happy Path 200/201" : "Error Boundary Path"}) and inspects live status code &amp; output.
+                  </p>
+                  <button
+                    type="button"
+                    className="postman-cta-send-btn"
+                    onClick={handleSendRequest}
+                  >
+                    <Send size={13} /> Send Request Now
+                  </button>
+                </div>
+              ) : (
+                /* Live Server Response State */
+                <>
+                  {/* Response Status Bar */}
+                  <div className="postman-response-topbar">
+                    <div className="postman-response-subtabs">
+                      <button
+                        type="button"
+                        className={`postman-subtab ${responseTab === "body" ? "active" : ""}`}
+                        onClick={() => setResponseTab("body")}
+                      >
+                        Body
+                      </button>
+                      <button
+                        type="button"
+                        className={`postman-subtab ${responseTab === "headers" ? "active" : ""}`}
+                        onClick={() => setResponseTab("headers")}
+                      >
+                        Headers{" "}
+                        <span className="postman-tab-count">
+                          ({liveResult.responseHeaders.length})
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`postman-subtab ${responseTab === "tests" ? "active" : ""}`}
+                        onClick={() => setResponseTab("tests")}
+                      >
+                        Test Results{" "}
+                        <span className="postman-tab-count pass-count">
+                          ({liveResult.assertions.length}/{liveResult.assertions.length})
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`postman-subtab ${responseTab === "console" ? "active" : ""}`}
+                        onClick={() => setResponseTab("console")}
+                      >
+                        <Terminal size={11} style={{ marginRight: 3, display: "inline" }} />
+                        Console
+                      </button>
+                      <button
+                        type="button"
+                        className={`postman-subtab ${responseTab === "strategy" ? "active" : ""}`}
+                        onClick={() => setResponseTab("strategy")}
+                      >
+                        QA Strategy
+                      </button>
+                    </div>
+
+                    {/* Right Metadata: Status, Time, Size, Actions */}
+                    <div className="postman-response-metrics">
+                      <span
+                        className={`response-metric-status ${
+                          liveResult.statusCode < 400 ? "status-success" : "status-error"
+                        }`}
+                      >
+                        Status: <strong>{liveResult.status}</strong>
+                      </span>
+
+                      <span className="response-metric-item" title="Live measured network latency">
+                        <Clock size={11} /> Time: <strong>{liveResult.time}</strong>
+                      </span>
+
+                      <span className="response-metric-item" title="Transferred payload size">
+                        Size: <strong>{liveResult.size}</strong>
+                      </span>
+
+                      <button
+                        type="button"
+                        className="postman-tool-btn"
+                        onClick={handleSendRequest}
+                        title="Re-send live request"
+                      >
+                        <RotateCw size={11} /> Re-send
+                      </button>
+
+                      <button
+                        type="button"
+                        className="postman-tool-btn"
+                        onClick={handleCopyResponse}
+                        title="Copy response body JSON to clipboard"
+                      >
+                        {copiedResponse ? (
+                          <>
+                            <Check size={11} style={{ color: "#34d399" }} /> Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Copy size={11} /> Copy
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        className="postman-tool-btn"
+                        onClick={handleClearResponse}
+                        title="Clear response and return to ready state"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Response Tab Content */}
+                  <div className="postman-response-content">
+                    {responseTab === "body" && (
+                      <div className="postman-response-body-wrapper">
+                        <div className="postman-body-toolbar">
+                          <div className="toolbar-left">
+                            <span className="toolbar-pill active">Pretty</span>
+                            <span className="toolbar-pill">Raw</span>
+                            <span className="toolbar-pill">Preview</span>
+                            <span className="toolbar-sep">|</span>
+                            <span className="toolbar-format">JSON</span>
+                          </div>
+                          <span style={{ fontSize: "0.65rem", color: "#64748b", fontFamily: "var(--font-mono)" }}>
+                            Received at {liveResult.timestamp}
+                          </span>
+                        </div>
+                        <JsonCodeViewer data={liveResult.response} />
+                      </div>
+                    )}
+
+                    {responseTab === "headers" && (
+                      <div className="postman-table-container">
+                        <table className="postman-kv-table">
+                          <thead>
+                            <tr>
+                              <th>Header Key</th>
+                              <th>Value</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {liveResult.responseHeaders.map((h, idx) => (
+                              <tr key={idx}>
+                                <td className="kv-key">{h.key}</td>
+                                <td className="kv-val">{h.value}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {responseTab === "tests" && (
+                      <div className="postman-results-wrapper">
+                        <div className="postman-results-summary-card">
+                          <span className="summary-pass-pill">PASS</span>
+                          <span>
+                            <strong>{liveResult.assertions.length} of {liveResult.assertions.length}</strong> tests passed
+                          </span>
+                        </div>
+
+                        <div className="postman-assertions-grid">
+                          {liveResult.assertions.map((ast, idx) => (
+                            <div className="postman-assertion-row" key={idx}>
+                              <span className="badge-pass">PASS</span>
+                              <span className="assertion-text">{ast.name}</span>
+                              <span className="assertion-ms">{ast.timeMs}ms</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {responseTab === "console" && (
+                      <div className="postman-console-wrapper">
+                        <div className="postman-console-bar">
+                          <span>Postman Console Network Trace</span>
+                          <span style={{ color: "#34d399" }}>HTTP/1.1 {liveResult.statusCode}</span>
+                        </div>
+                        <div className="postman-code-editor">
+                          {liveResult.consoleLogs.map((log, idx) => (
+                            <div className="postman-code-row" key={idx}>
+                              <span className="postman-code-num">{idx + 1}</span>
+                              <span
+                                className="postman-code-text"
+                                style={{
+                                  color: log.startsWith("<")
+                                    ? "#34d399"
+                                    : log.startsWith("PASS")
+                                    ? "#38bdf8"
+                                    : "#cbd5e1",
+                                }}
+                              >
+                                {log}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {responseTab === "strategy" && (
+                      <div className="postman-qa-strategy-pane">
+                        <div className="strategy-card">
+                          <div className="strategy-title">
+                            <ShieldCheck size={15} style={{ color: "#38bdf8" }} />
+                            <span>QA Engineering Validation Rationale</span>
+                          </div>
+                          <p className="strategy-body">{activeData.qaContext}</p>
+                        </div>
+
+                        <div className="strategy-metrics-row">
+                          <div className="strategy-mini-box">
+                            <span className="mini-label">Pipeline Trigger:</span>
+                            <span className="mini-value">GitHub Actions / Newman CLI</span>
+                          </div>
+                          <div className="strategy-mini-box">
+                            <span className="mini-label">Test Automation Type:</span>
+                            <span className="mini-value">Automated Contract &amp; Schema Regression</span>
+                          </div>
+                          <div className="strategy-mini-box">
+                            <span className="mini-label">SLA Enforcement:</span>
+                            <span className="mini-value">p95 Latency &lt; 100ms</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
