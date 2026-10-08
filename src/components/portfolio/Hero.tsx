@@ -199,7 +199,7 @@ export default function Hero() {
                 className="footer-icon-btn"
                 href="https://github.com/MrVaya"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 title="GitHub: MrVaya"
                 aria-label="GitHub Profile"
               >
@@ -209,7 +209,7 @@ export default function Hero() {
                 className="footer-icon-btn"
                 href="https://www.linkedin.com/in/ligal-nirvaya/"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 title="LinkedIn Profile"
                 aria-label="LinkedIn Profile"
               >

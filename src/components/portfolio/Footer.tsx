@@ -37,7 +37,7 @@ export default function Footer() {
             className="footer-icon-btn"
             href="https://www.linkedin.com/in/ligal-nirvaya/"
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             aria-label="LinkedIn"
           >
             <LinkedInIcon size={16} />
@@ -46,7 +46,7 @@ export default function Footer() {
             className="footer-icon-btn"
             href="https://github.com/MrVaya"
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             aria-label="GitHub"
           >
             <GitHubIcon size={16} />

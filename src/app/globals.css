@@ -752,62 +752,229 @@ a {
 }
 
 /* =========================================================================
-   EXPERIENCE SECTION (CAREER TIMELINE)
+   EXPERIENCE SECTION (CAREER TIMELINE) - REDESIGNED
    ========================================================================= */
-.experience-timeline {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  margin-top: 40px;
+.experience-timeline-wrap {
+  position: relative;
+  margin-top: 48px;
 }
 
-.timeline-card {
-  padding: 34px;
+/* Continuous Vertical Timeline Spine */
+.timeline-track-spine {
+  position: absolute;
+  top: 36px;
+  bottom: 48px;
+  left: 23px;
+  width: 2px;
+  background: linear-gradient(
+    180deg,
+    rgba(56, 189, 248, 0.45) 0%,
+    rgba(56, 189, 248, 0.2) 35%,
+    rgba(52, 211, 153, 0.35) 70%,
+    rgba(52, 211, 153, 0.04) 100%
+  );
+  pointer-events: none;
+}
+
+.timeline-items-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+
+.timeline-item-entry {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 28px;
+}
+
+/* Timeline Milestone Node */
+.timeline-node-anchor {
+  position: relative;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0d1017;
+  border: 1px solid var(--border);
+  z-index: 2;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.timeline-node-qa {
+  border-color: rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.timeline-node-qa:hover {
+  border-color: rgba(56, 189, 248, 0.6);
+  box-shadow: 0 0 26px rgba(56, 189, 248, 0.22);
+}
+
+.timeline-node-finance {
+  border-color: rgba(52, 211, 153, 0.3);
+  color: #34d399;
+  box-shadow: 0 0 18px rgba(52, 211, 153, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.timeline-node-finance:hover {
+  border-color: rgba(52, 211, 153, 0.5);
+  box-shadow: 0 0 24px rgba(52, 211, 153, 0.18);
+}
+
+/* Timeline Cards */
+.timeline-card-content {
+  flex: 1;
+  min-width: 0;
   border-radius: 16px;
   background: var(--card);
   border: 1px solid var(--border);
-  transition: all 0.25s ease;
+  box-shadow: var(--shadow-card);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 
-.timeline-card:hover {
-  border-color: var(--border-strong);
+/* Primary QA Card styling */
+.timeline-card-qa {
+  padding: 34px;
+  border-color: rgba(56, 189, 248, 0.2);
+  background: linear-gradient(180deg, rgba(19, 23, 32, 0.98) 0%, rgba(13, 17, 24, 0.98) 100%);
+  position: relative;
+  overflow: hidden;
 }
 
-.timeline-header-row {
+.timeline-card-qa::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, rgba(56, 189, 248, 0.65) 40%, rgba(56, 189, 248, 0.65) 60%, transparent 100%);
+}
+
+.timeline-card-qa:hover {
+  border-color: rgba(56, 189, 248, 0.38);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), 0 0 24px rgba(56, 189, 248, 0.06);
+}
+
+/* Secondary Finance Card styling */
+.timeline-card-finance {
+  padding: 26px 30px;
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(19, 23, 32, 0.75);
+}
+
+.timeline-card-finance:hover {
+  border-color: rgba(52, 211, 153, 0.3);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.4);
+}
+
+/* Header Areas */
+.timeline-card-header {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding-bottom: 22px;
+  flex-direction: column;
+  padding-bottom: 20px;
   border-bottom: 1px solid var(--border);
 }
 
-.timeline-title-area {
+.timeline-header-top-row {
   display: flex;
-  gap: 16px;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.timeline-role-icon {
-  display: grid;
-  width: 48px;
-  height: 48px;
-  place-items: center;
-  border-radius: 12px;
+.timeline-role-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.timeline-title-area h3 {
+.timeline-role-title-group h3 {
   margin: 0;
+  font-family: var(--font-heading);
   font-size: 1.35rem;
   font-weight: 700;
   color: #ffffff;
+  letter-spacing: -0.02em;
 }
 
-.timeline-title-area p {
-  margin: 4px 0 0;
+.timeline-role-meta-text {
+  margin: 0;
   font-size: 0.88rem;
+  color: #cbd5e1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.timeline-company-name {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.timeline-meta-dot {
+  color: #64748b;
+}
+
+.timeline-category-label {
   color: #94a3b8;
+  font-weight: 400;
+}
+
+.timeline-badges-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.discipline-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.discipline-badge-qa {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.discipline-badge-finance {
+  color: #34d399;
+  background: rgba(52, 211, 153, 0.08);
+  border: 1px solid rgba(52, 211, 153, 0.22);
+}
+
+.live-pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #38bdf8;
+  box-shadow: 0 0 8px #38bdf8;
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
+.role-summary-copy {
+  margin: 14px 0 0;
+  color: #94a3b8;
+  font-size: 0.94rem;
+  line-height: 1.68;
 }
 
 .timeline-meta-tags {
@@ -817,6 +984,8 @@ a {
 }
 
 .meta-chip {
+  display: inline-flex;
+  align-items: center;
   padding: 6px 12px;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.04);
@@ -832,32 +1001,239 @@ a {
   background: rgba(56, 189, 248, 0.05);
 }
 
-.timeline-bullets {
-  margin: 22px 0 0;
-  padding: 0;
-  list-style: none;
+.meta-chip-emerald {
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.28);
+  background: rgba(52, 211, 153, 0.06);
+}
+
+/* QA 4 Competency Cards Grid */
+.qa-competency-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.competency-item-card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  padding: 18px 20px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
 }
 
-.timeline-bullet-item {
+.competency-item-card:hover {
+  background: rgba(56, 189, 248, 0.035);
+  border-color: rgba(56, 189, 248, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+}
+
+.competency-card-top {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 12px;
-  font-size: 0.92rem;
-  line-height: 1.68;
-  color: #cbd5e1;
+  margin-bottom: 8px;
 }
 
-.timeline-bullet-item strong {
+.competency-icon-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: rgba(56, 189, 248, 0.1);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  flex-shrink: 0;
+}
+
+.competency-item-card h4 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+}
+
+.competency-item-card p {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.6;
+  color: #94a3b8;
+}
+
+.competency-micro-tag {
+  display: inline-block;
+  margin-top: 3px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: #38bdf8;
+  letter-spacing: 0.03em;
+  opacity: 0.88;
+}
+
+/* Expandable Responsibilities Area */
+.expandable-responsibilities-wrap {
+  margin-top: 22px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.expandable-responsibilities-wrap:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.expand-toggle-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 18px;
+  background: transparent;
+  border: none;
+  color: #e2e8f0;
+  font-size: 0.84rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+}
+
+.expand-toggle-button:hover {
+  background: rgba(255, 255, 255, 0.03);
   color: #ffffff;
 }
 
-.bullet-check {
-  color: var(--accent);
+.expand-toggle-button:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: -2px;
+}
+
+.expand-toggle-left {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+}
+
+.expand-toggle-left .toggle-badge {
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.expand-toggle-icon {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  transition: transform 0.25s ease;
+}
+
+.expanded-bullets-container {
+  padding: 0 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  margin-top: 4px;
+  padding-top: 16px;
+}
+
+.expanded-bullet-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.86rem;
+  line-height: 1.62;
+  color: #cbd5e1;
+}
+
+.expanded-bullet-row strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.bullet-icon-check {
+  color: #38bdf8;
   flex-shrink: 0;
   margin-top: 4px;
+}
+
+/* Admin & Finance 3 Areas Grid */
+.finance-pillars-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.finance-pillar-box {
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.finance-pillar-box:hover {
+  background: rgba(52, 211, 153, 0.035);
+  border-color: rgba(52, 211, 153, 0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+}
+
+.finance-pillar-header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 8px;
+}
+
+.finance-pillar-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: rgba(52, 211, 153, 0.1);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.2);
+  flex-shrink: 0;
+}
+
+.finance-pillar-box h4 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.finance-pillar-box p {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.58;
+  color: #94a3b8;
 }
 
 .timeline-skills-footer {
@@ -867,6 +1243,63 @@ a {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+/* Responsive Experience Timeline */
+@media (max-width: 900px) {
+  .qa-competency-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .finance-pillars-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .timeline-track-spine {
+    left: 17px;
+    top: 24px;
+    bottom: 32px;
+  }
+
+  .timeline-item-entry {
+    gap: 14px;
+  }
+
+  .timeline-node-anchor {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  .timeline-card-qa {
+    padding: 22px 18px;
+  }
+
+  .timeline-card-finance {
+    padding: 20px 16px;
+  }
+
+  .timeline-header-top-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timeline-node-anchor,
+  .timeline-card-content,
+  .competency-item-card,
+  .finance-pillar-box,
+  .expand-toggle-button,
+  .expand-toggle-icon {
+    transition: none !important;
+    transform: none !important;
+  }
+  .live-pulse-dot {
+    animation: none !important;
+  }
 }
 
 /* =========================================================================

@@ -66,9 +66,9 @@ const matrixGroups: MatrixGroup[] = [
     skills: [
       { name: "Postman", context: "Organizing parameterized test collections, environments, and automated assertions." },
       { name: "REST APIs", context: "Testing HTTP methods (GET, POST, PUT, DELETE) and header authentication." },
-      { name: "Swagger / OpenAPI", context: "Cross-verifying endpoint schema contracts against official API specifications." },
+      { name: "Swagger ", context: "Cross-verifying endpoint schema contracts against official API specifications." },
       { name: "Status Code Validation", context: "Asserting correct 2xx, 4xx, and 5xx return codes across all branches." },
-      { name: "JSON Payload Verification", context: "Inspecting response structure, data types, and required key presence." },
+      // { name: "JSON Payload Verification", context: "Inspecting response structure, data types, and required key presence." },
       { name: "Negative Testing", context: "Passing malformed payloads and expired tokens to verify secure error handling." },
     ],
   },
@@ -81,8 +81,8 @@ const matrixGroups: MatrixGroup[] = [
     skills: [
       { name: "SQL Queries", context: "Writing SELECT, JOIN, and aggregate queries to inspect raw table entries." },
       { name: "Database Verification", context: "Confirming frontend actions commit proper rows and foreign key references." },
-      { name: "Jira", context: "Logging structured defect tickets with reproduction steps and priority triage." },
-      { name: "ClickUp", context: "Tracking testing tasks, sprint backlogs, and test coverage checklists." },
+      // { name: "Jira", context: "Logging structured defect tickets with reproduction steps and priority triage." },
+      // { name: "ClickUp", context: "Tracking testing tasks, sprint backlogs, and test coverage checklists." },
       { name: "Git & GitHub", context: "Version control for test repositories, branching, and pull request reviews." },
       { name: "Browser DevTools", context: "Inspecting network requests, console errors, localStorage, and DOM elements." },
     ],

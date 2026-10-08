@@ -89,7 +89,7 @@ export default function Contact() {
                 className="contact-link-row"
                 href="https://www.linkedin.com/in/ligal-nirvaya/"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
               >
                 <div className="contact-link-left">
                   <LinkedInIcon size={18} />
@@ -102,7 +102,7 @@ export default function Contact() {
                 className="contact-link-row"
                 href="https://github.com/MrVaya"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
               >
                 <div className="contact-link-left">
                   <GitHubIcon size={18} />
