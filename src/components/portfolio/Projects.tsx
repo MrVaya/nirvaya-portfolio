@@ -11,21 +11,15 @@ import {
   Code2,
   Copy,
   Database,
-  ExternalLink,
   Eye,
   FileCode2,
-  FileJson,
-  Folder,
   Globe,
-  Layers,
   Loader2,
   Lock,
-  Play,
   RotateCw,
   Send,
   Server,
   ShieldCheck,
-  Sliders,
   Terminal,
 } from "lucide-react";
 
@@ -79,24 +73,24 @@ interface EndpointConfig {
 
 const apiEndpoints: EndpointConfig[] = [
   {
-    id: "auth-session",
-    name: "Verify Session Token",
-    path: "/api/v1/auth/session",
+    id: "blood-inventory",
+    name: "Check Blood Availability",
+    path: "/api/v1/blood-bank/inventory",
     method: "GET",
-    description: "Validates JWT token expiry, RBAC permissions & session revocation state",
+    description: "Checks blood unit counts, expiry dates, and compatibility for NRCS Blood Bank",
     params: [
-      { key: "include_perms", value: "true", desc: "Include fine-grained RBAC permissions", enabled: true },
-      { key: "format", value: "json", desc: "Serialization output format", enabled: true },
+      { key: "blood_type", value: "O_POS", desc: "Target blood group for compatibility lookup", enabled: true },
+      { key: "include_expired", value: "false", desc: "Exclude units past cross-match validity window", enabled: true },
     ],
     authType: "Bearer Token",
-    authPreview: "eyJhGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c3JfOTkxMjAiLCJyb2xlIjoicWFfdGVzdGVyIn0.qa99120_sig",
+    authPreview: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJzdGFmZl8wMDciLCJyb2xlIjoiYmxvb2RfYmFua19vcGVyYXRvciJ9.nrcs_bb_sig",
     requestHeaders: [
       { key: "Accept", value: "application/json", desc: "Target media type" },
-      { key: "Authorization", value: "Bearer {{authToken}}", desc: "Injected from Staging environment" },
-      { key: "X-Client-Version", value: "2.4.0", desc: "Client contract release" },
+      { key: "Authorization", value: "Bearer {{authToken}}", desc: "Staff operator session token" },
+      { key: "X-Branch-Code", value: "NRCS-PKR-001", desc: "Pokhara regional blood bank branch" },
       { key: "User-Agent", value: "PostmanRuntime/7.39.0", desc: "Automated test runner" },
     ],
-    testScript: `// Postman Tests: Auth Session Contract
+    testScript: `// Postman Tests: Blood Inventory Availability
 pm.test("Status code is 200 OK", function () {
     pm.response.to.have.status(200);
 });
@@ -105,103 +99,104 @@ pm.test("Response time SLA is under 100ms", function () {
     pm.expect(pm.response.responseTime).to.be.below(100);
 });
 
-pm.test("User payload contains required QA permissions", function () {
+pm.test("Available units count is a valid number", function () {
     const json = pm.response.json();
-    pm.expect(json.data.permissions).to.be.an('array');
-    pm.expect(json.data.permissions).to.include('tests:execute');
+    pm.expect(json.data.unitsAvailable).to.be.a('number');
+    pm.expect(json.data.unitsAvailable).to.be.at.least(0);
 });
 
-pm.test("Session expiry timestamp is a valid future ISO date", function () {
-    const expiry = new Date(pm.response.json().data.sessionExpiresAt);
-    pm.expect(expiry.getTime()).to.be.greaterThan(Date.now());
+pm.test("Cross-match validity flag is a boolean", function () {
+    const json = pm.response.json();
+    pm.expect(json.data.crossMatchValid).to.be.a('boolean');
 });`,
     scenarios: {
       positive: {
         status: "200 OK",
         statusCode: 200,
-        time: "24ms",
-        size: "1.14 KB",
+        time: "22ms",
+        size: "0.98 KB",
         responseHeaders: [
           { key: "content-type", value: "application/json; charset=utf-8" },
-          { key: "x-ratelimit-remaining", value: "994" },
-          { key: "x-response-time", value: "24ms" },
-          { key: "cache-control", value: "no-store, no-cache, must-revalidate" },
-          { key: "strict-transport-security", value: "max-age=31536000; includeSubDomains" },
+          { key: "x-response-time", value: "22ms" },
+          { key: "cache-control", value: "no-store" },
+          { key: "x-branch-code", value: "NRCS-PKR-001" },
         ],
         response: {
           status: "success",
           data: {
-            userId: "usr_99120",
-            username: "tester.vaya",
-            role: "qa_tester",
-            permissions: ["tests:read", "tests:execute", "reports:export"],
-            sessionExpiresAt: "2026-10-02T18:00:00Z",
+            bloodType: "O_POS",
+            unitsAvailable: 12,
+            nearestExpiry: "2026-11-15T00:00:00Z",
+            crossMatchValid: true,
+            storageTemp: "2-6°C",
+            lastVerified: "2026-11-04T08:30:00Z",
           },
         },
         assertions: [
-          { name: "pm.test('Status code is 200 OK')", passed: true, timeMs: 4 },
-          { name: "pm.test('Response time SLA is under 100ms (24ms)')", passed: true, timeMs: 2 },
-          { name: "pm.test('User payload contains required QA permissions')", passed: true, timeMs: 5 },
-          { name: "pm.test('Session expiry timestamp is a valid future ISO date')", passed: true, timeMs: 3 },
+          { name: "pm.test('Status code is 200 OK')", passed: true, timeMs: 3 },
+          { name: "pm.test('Response time SLA is under 100ms (22ms)')", passed: true, timeMs: 2 },
+          { name: "pm.test('Available units count is a valid number')", passed: true, timeMs: 4 },
+          { name: "pm.test('Cross-match validity flag is a boolean')", passed: true, timeMs: 2 },
         ],
         qaContext:
-          "Asserts that authenticated tokens return expected fine-grained RBAC claims without leaking superadmin elevation. Verifies server sets no-store cache headers to prevent token retention in intermediate proxies.",
+          "Verifies that blood inventory lookups return accurate unit counts, valid cross-match status, and WHO-compliant storage temperatures (2-6°C) so hospital staff never see inaccurate stock.",
       },
       negative: {
-        status: "401 Unauthorized",
-        statusCode: 401,
+        status: "404 Not Found",
+        statusCode: 404,
         time: "18ms",
-        size: "468 B",
+        size: "512 B",
         responseHeaders: [
           { key: "content-type", value: "application/json; charset=utf-8" },
-          { key: "www-authenticate", value: "Bearer error=\"invalid_token\", error_description=\"The token is expired\"" },
           { key: "x-response-time", value: "18ms" },
-          { key: "server", value: "nginx/1.24 (staging-edge)" },
+          { key: "x-branch-code", value: "NRCS-PKR-001" },
         ],
         response: {
-          error: "UNAUTHORIZED",
-          message: "Bearer token expired or signature validation failed",
-          code: "AUTH_TOKEN_EXPIRED",
-          timestamp: "2026-10-01T17:10:00Z",
+          error: "NO_UNITS_AVAILABLE",
+          message: "No compatible blood units found for requested type AB_NEG",
+          bloodType: "AB_NEG",
+          suggestion: "Contact regional blood bank network for emergency transfer",
+          timestamp: "2026-11-04T09:15:00Z",
         },
         assertions: [
-          { name: "pm.test('Status code is 401 Unauthorized')", passed: true, timeMs: 3 },
-          { name: "pm.test('Response payload contains standardized error code')", passed: true, timeMs: 4 },
-          { name: "pm.test('No sensitive internal stack trace leaked')", passed: true, timeMs: 2 },
+          { name: "pm.test('Status code is 404 Not Found')", passed: true, timeMs: 3 },
+          { name: "pm.test('Error response includes helpful suggestion')", passed: true, timeMs: 4 },
+          { name: "pm.test('No internal server errors leaked')", passed: true, timeMs: 2 },
         ],
         qaContext:
-          "Asserts that expired or tampered bearer tokens are blocked immediately at the authentication gateway before executing downstream database queries, guarding against unauthorized data exposure.",
+          "Checks that when no units of a requested blood type are in stock, the API returns a clean 404 with emergency transfer suggestions rather than crashing or showing a blank page.",
       },
     },
   },
   {
-    id: "user-register",
-    name: "Register New User",
-    path: "/api/v1/users/register",
+    id: "donor-register",
+    name: "Register Blood Donor",
+    path: "/api/v1/donors/register",
     method: "POST",
-    description: "Enforces RFC-compliant email, password complexity and duplicate detection",
+    description: "Validates donor eligibility rules, screening details, and generates donor IDs",
     params: [],
     authType: "No Auth",
-    authPreview: "Inherits from collection: None required for public registration",
+    authPreview: "Public donor self-registration endpoint — no auth required",
     requestHeaders: [
       { key: "Content-Type", value: "application/json", desc: "Request payload schema" },
-      { key: "Accept", value: "application/json", desc: "Expected response serialization" },
+      { key: "Accept", value: "application/json", desc: "Expected response format" },
       { key: "User-Agent", value: "PostmanRuntime/7.39.0", desc: "Automated regression runner" },
     ],
-    testScript: `// Postman Tests: Registration Contract & Boundary
+    testScript: `// Postman Tests: Donor Registration & Eligibility
 pm.test("Status code is 201 Created (or 400 on error)", function () {
     pm.expect(pm.response.code).to.be.oneOf([201, 400]);
 });
 
-pm.test("Plaintext password never echoed in response body", function () {
-    pm.expect(pm.response.text()).to.not.include("SecurePassword123!");
+pm.test("Sensitive medical details not echoed in response", function () {
+    pm.expect(pm.response.text()).to.not.include("hemoglobinLevel");
+    pm.expect(pm.response.text()).to.not.include("medicalHistory");
 });
 
-pm.test("Response includes unique new userId", function () {
+pm.test("Donor ID matches format DNR-YYYYMMDD-XXXX", function () {
     const json = pm.response.json();
     if (pm.response.code === 201) {
-        pm.expect(json.data).to.have.property("userId");
-        pm.expect(json.data.status).to.eql("PENDING_VERIFICATION");
+        pm.expect(json.data.donorId).to.match(/^DNR-\\d{8}-\\d{4}$/);
+        pm.expect(json.data.eligibilityStatus).to.eql("ELIGIBLE");
     } else {
         pm.expect(json).to.have.property("details");
     }
@@ -210,78 +205,83 @@ pm.test("Response includes unique new userId", function () {
       positive: {
         status: "201 Created",
         statusCode: 201,
-        time: "48ms",
-        size: "1.38 KB",
+        time: "42ms",
+        size: "1.22 KB",
         requestBody: {
           fullName: "Nirvaya Ligal",
+          bloodType: "O_POS",
+          dateOfBirth: "1999-05-15",
+          lastDonationDate: "2026-08-20",
           email: "nirvaya22@gmail.com",
-          password: "SecurePassword123!",
-          role: "qa_tester",
         },
         responseHeaders: [
           { key: "content-type", value: "application/json; charset=utf-8" },
-          { key: "location", value: "/api/v1/users/usr_88204" },
-          { key: "x-response-time", value: "48ms" },
-          { key: "etag", value: "W/\"5a-G7d9v1\"" },
+          { key: "location", value: "/api/v1/donors/DNR-20261104-0847" },
+          { key: "x-response-time", value: "42ms" },
+          { key: "etag", value: "W/\"6b-H8e3w2\"" },
         ],
         response: {
           success: true,
           data: {
-            userId: "usr_88204",
-            email: "nirvaya22@gmail.com",
-            status: "PENDING_VERIFICATION",
-            createdAt: "2026-10-01T17:10:20Z",
+            donorId: "DNR-20261104-0847",
+            fullName: "Nirvaya Ligal",
+            bloodType: "O_POS",
+            eligibilityStatus: "ELIGIBLE",
+            nextEligibleDate: "2027-02-04T00:00:00Z",
+            registeredAt: "2026-11-04T09:30:00Z",
           },
         },
         assertions: [
-          { name: "pm.test('Status code is 201 Created')", passed: true, timeMs: 4 },
-          { name: "pm.test('Response includes new unique userId')", passed: true, timeMs: 5 },
-          { name: "pm.test('Plaintext password never returned in body')", passed: true, timeMs: 3 },
-          { name: "pm.test('Initial account state is PENDING_VERIFICATION')", passed: true, timeMs: 2 },
+          { name: "pm.test('Status code is 201 Created')", passed: true, timeMs: 3 },
+          { name: "pm.test('Donor ID matches DNR-YYYYMMDD-XXXX format')", passed: true, timeMs: 5 },
+          { name: "pm.test('Sensitive medical details not echoed in response')", passed: true, timeMs: 3 },
+          { name: "pm.test('Eligibility status is ELIGIBLE for valid donor')", passed: true, timeMs: 2 },
         ],
         qaContext:
-          "Verifies proper registration workflow: passwords must be securely hashed with argon2id on ingestion, user records must enter PENDING_VERIFICATION, and HTTP 201 headers must provide resource location.",
+          "Validates that donor registration enforces the 56-day wait between donations, issues a properly formatted donor ID, and keeps medical details private.",
       },
       negative: {
         status: "400 Bad Request",
         statusCode: 400,
-        time: "21ms",
-        size: "624 B",
+        time: "38ms",
+        size: "648 B",
         requestBody: {
-          fullName: "Nirvaya",
-          email: "invalid-email-string",
-          password: "123",
+          fullName: "Ram Sharma",
+          bloodType: "O_POS",
+          dateOfBirth: "1995-03-10",
+          lastDonationDate: "2026-10-28",
+          hemoglobinLevel: 11.2,
         },
         responseHeaders: [
           { key: "content-type", value: "application/json; charset=utf-8" },
-          { key: "x-response-time", value: "21ms" },
-          { key: "x-error-handler", value: "zod-schema-validator" },
+          { key: "x-response-time", value: "38ms" },
+          { key: "x-validation-engine", value: "eligibility-rules-v2" },
         ],
         response: {
-          error: "VALIDATION_FAILED",
+          error: "DONOR_INELIGIBLE",
           details: {
-            email: "Must be a valid RFC 5322 email format",
-            password: "Password must be at least 8 characters with 1 symbol",
+            lastDonationDate: "Donor must wait minimum 56 days between whole blood donations",
+            hemoglobinLevel: "Hemoglobin level 11.2 g/dL below minimum threshold of 12.5 g/dL",
           },
         },
         assertions: [
           { name: "pm.test('Status code is 400 Bad Request')", passed: true, timeMs: 3 },
-          { name: "pm.test('Returns targeted field-level validation errors')", passed: true, timeMs: 5 },
-          { name: "pm.test('Malformed record NOT committed to database')", passed: true, timeMs: 3 },
+          { name: "pm.test('Returns clear field-level eligibility errors')", passed: true, timeMs: 5 },
+          { name: "pm.test('Ineligible donor not saved to database')", passed: true, timeMs: 3 },
         ],
         qaContext:
-          "Asserts that malformed email strings and weak passwords fail field-level Zod/JSON schema validations with targeted feedback, preventing invalid data from reaching Postgres persistence tables.",
+          "Checks that donors who don't meet health rules (e.g., donated too recently or low hemoglobin) get clear error messages and are not saved to the database.",
       },
     },
   },
   {
     id: "health-check",
-    name: "Subsystem Health Check",
+    name: "System Health Check",
     path: "/api/v1/health",
     method: "GET",
-    description: "Subsystem health, DB connection pool, and queue heartbeat validation",
+    description: "Checks Oracle DB connection and service status",
     params: [
-      { key: "deep", value: "true", desc: "Ping Postgres and Redis connection pools", enabled: true },
+      { key: "deep", value: "true", desc: "Check Oracle DB connection pool", enabled: true },
     ],
     authType: "No Auth",
     authPreview: "Public readiness probe endpoint",
@@ -289,7 +289,7 @@ pm.test("Response includes unique new userId", function () {
       { key: "Accept", value: "application/json", desc: "JSON health status" },
       { key: "User-Agent", value: "PostmanRuntime/7.39.0", desc: "Automated smoke monitor" },
     ],
-    testScript: `// Postman Tests: Service Health & Subsystem Connectivity
+    testScript: `// Postman Tests: Service Health & DB Connection
 pm.test("Status code is 200 OK", function () {
     pm.response.to.have.status(200);
 });
@@ -299,7 +299,7 @@ pm.test("Database connection latency < 15ms", function () {
     pm.expect(json.database).to.eql("CONNECTED");
 });
 
-pm.test("All critical subsystems reporting HEALTHY", function () {
+pm.test("All subsystems reporting HEALTHY", function () {
     const json = pm.response.json();
     pm.expect(json.status).to.eql("HEALTHY");
     pm.expect(json.redisCache).to.eql("CONNECTED");
@@ -324,10 +324,10 @@ pm.test("All critical subsystems reporting HEALTHY", function () {
         assertions: [
           { name: "pm.test('Status code is 200 OK')", passed: true, timeMs: 2 },
           { name: "pm.test('Database connection latency < 15ms')", passed: true, timeMs: 2 },
-          { name: "pm.test('All critical subsystems reporting HEALTHY')", passed: true, timeMs: 3 },
+          { name: "pm.test('All subsystems reporting HEALTHY')", passed: true, timeMs: 3 },
         ],
         qaContext:
-          "Heartbeat endpoint monitored in CI smoke testing and Kubernetes liveness probes. Confirms that connection pools to primary database and caching tiers are healthy before test runner begins test runs.",
+          "Smoke test endpoint used before running test suites to confirm that the Oracle database and caching services are online and ready.",
       },
       negative: {
         status: "503 Service Unavailable",
@@ -346,11 +346,11 @@ pm.test("All critical subsystems reporting HEALTHY", function () {
         },
         assertions: [
           { name: "pm.test('Status code is 503 Service Unavailable')", passed: true, timeMs: 2 },
-          { name: "pm.test('Circuit breaker prevents cascade failure')", passed: true, timeMs: 4 },
-          { name: "pm.test('Error event dispatched to telemetry logger')", passed: true, timeMs: 2 },
+          { name: "pm.test('Circuit breaker prevents crash')", passed: true, timeMs: 4 },
+          { name: "pm.test('Error logged to monitoring')", passed: true, timeMs: 2 },
         ],
         qaContext:
-          "Simulates database failover scenario to assert that service circuit breakers trip immediately, returning HTTP 503 with Retry-After rather than locking worker threads or causing cascading outages.",
+          "Simulates a database outage to make sure the app handles timeouts gracefully with a 503 error instead of freezing or crashing.",
       },
     },
   },
@@ -450,8 +450,7 @@ interface LiveResult {
 }
 
 export default function Projects() {
-  // Real Postman State
-  const [selectedEndpointId, setSelectedEndpointId] = useState<string>("auth-session");
+  const [selectedEndpointId, setSelectedEndpointId] = useState<string>("blood-inventory");
   const [scenario, setScenario] = useState<"positive" | "negative">("positive");
   const [requestTab, setRequestTab] = useState<"params" | "auth" | "headers" | "body" | "tests">("params");
   const [responseTab, setResponseTab] = useState<"body" | "headers" | "tests" | "console" | "strategy">("body");
@@ -462,7 +461,6 @@ export default function Projects() {
   const [liveResult, setLiveResult] = useState<LiveResult | null>(null);
   const [hasExecuted, setHasExecuted] = useState<boolean>(false);
 
-  // Defect Ticket Drawer State
   const [showBugTicket, setShowBugTicket] = useState(false);
 
   const currentEndpoint =
@@ -514,6 +512,8 @@ export default function Projects() {
           ? "Bad Request"
           : res.status === 401
           ? "Unauthorized"
+          : res.status === 404
+          ? "Not Found"
           : "Service Unavailable");
 
       const logs = [
@@ -541,7 +541,6 @@ export default function Projects() {
       });
       setHasExecuted(true);
     } catch {
-      // Fallback in case of network issue
       const elapsed = Math.round(performance.now() - startTime);
       setLiveResult({
         status: activeData.status,
@@ -603,55 +602,46 @@ export default function Projects() {
           <span />
           02 / Projects
         </div>
-        <h2>Featured QA Projects.</h2>
+        <h2>Projects.</h2>
         <p>
-          Practical testing work demonstrating test automation design, API contract validation,
-          backend data verification, and structured defect reporting across real web applications.
+          Testing work I did across USPS, Nepal Red Cross Society Blood Bank, and NIMS educational platform —
+          covering Playwright automation, API testing, Oracle SQL validation, and bug tracking.
         </p>
       </div>
 
       <div className="cases-grid">
-        {/* Case Study 01: Playwright Test Automation */}
+        {/* Case Study 01: USPS */}
         <article className="case-card case-featured">
           <div className="case-content">
             <div className="case-kicker">
-              <span className="case-type-badge">E2E Web Automation</span>
+              <span className="case-type-badge">Playwright · Oracle SQL · Jenkins · Unix</span>
               <span className="meta-chip" style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}>
-                <Lock size={12} style={{ color: "#94a3b8" }} /> Professional Project · Private Repo
+                <Lock size={12} style={{ color: "#94a3b8" }} /> TechStaffing Hub · Private Repo
               </span>
             </div>
-            <h3>Automated E2E Regression Suite</h3>
+            <h3>USPS — Postal Service System Testing</h3>
             <p>
-              An automated end-to-end regression testing framework built with Playwright and
-              TypeScript. Implements Page Object Model (POM) architecture to validate authentication
-              states, dynamic form workflows, and core user journeys.
+              Tested mail tracking and lookup flows on the USPS web platform. Built automated Playwright tests, validated backend data directly in Oracle SQL, ran test jobs in Jenkins, and used Unix commands to inspect server logs.
             </p>
 
             <div className="case-deliverables-list">
               <div className="case-deliverable">
                 <CheckCircle2 size={16} />
-                <span><strong>Challenge:</strong> Validating asynchronous UI updates and state transitions across browsers without flaky tests</span>
+                <span><strong>Automated E2E Testing:</strong> Built 30+ automated tests in Playwright and TypeScript using the Page Object Model (POM) to automate tracking lookups and delivery status checks.</span>
               </div>
               <div className="case-deliverable">
                 <CheckCircle2 size={16} />
-                <span><strong>Approach:</strong> Separated page locators from assertions using Page Object Model and reusable action helpers</span>
-              </div>
-              <div className="case-deliverable">
-                <CheckCircle2 size={16} />
-                <span><strong>Coverage:</strong> Authentication, session persistence, input validation, negative paths, and cross-browser execution</span>
-              </div>
-              <div className="case-deliverable">
-                <CheckCircle2 size={16} />
-                <span><strong>Key Takeaway:</strong> Built reliable, deterministic tests by prioritizing user-facing accessibility locators over brittle CSS paths</span>
+                <span><strong>DB, Jenkins &amp; Unix:</strong> Verified shipment and tracking records with Oracle SQL queries, triggered test runs through Jenkins CI, and checked test execution logs on Unix servers.</span>
               </div>
             </div>
 
             <div className="case-tags">
               <span className="badge-chip">Playwright</span>
               <span className="badge-chip">TypeScript</span>
-              <span className="badge-chip">Page Object Model</span>
-              <span className="badge-chip">Cross-Browser</span>
-              <span className="badge-chip">Regression</span>
+              <span className="badge-chip">Oracle SQL</span>
+              <span className="badge-chip">Jenkins</span>
+              <span className="badge-chip">Unix</span>
+              <span className="badge-chip">Page Object Model (POM)</span>
             </div>
           </div>
 
@@ -663,7 +653,7 @@ export default function Projects() {
                   <i className="dot-yellow" />
                   <i className="dot-green" />
                 </div>
-                <span>auth-flow.spec.ts</span>
+                <span>mail-tracking.spec.ts</span>
                 <FileCode2 size={13} style={{ color: "#64748b" }} />
               </div>
               <div className="code-body">
@@ -673,40 +663,40 @@ export default function Projects() {
                   <span className="code-string">&apos;@playwright/test&apos;</span>;
                 </p>
                 <p>
-                  <span className="code-keyword">import</span> &#123; LoginPage &#125;{" "}
+                  <span className="code-keyword">import</span> &#123; TrackingPage &#125;{" "}
                   <span className="code-keyword">from</span>{" "}
-                  <span className="code-string">&apos;../pages/LoginPage&apos;</span>;
+                  <span className="code-string">&apos;../pages/TrackingPage&apos;</span>;
                 </p>
                 <br />
                 <p>
                   <span className="code-func">test.describe</span>(
-                  <span className="code-string">&apos;Authentication Workflow&apos;</span>, () =&gt; &#123;
+                  <span className="code-string">&apos;USPS Mail Tracking Workflow&apos;</span>, () =&gt; &#123;
                 </p>
                 <p style={{ paddingLeft: "16px" }}>
                   <span className="code-func">test</span>(
-                  <span className="code-string">&apos;validates credentials &amp; active session&apos;</span>,{" "}
+                  <span className="code-string">&apos;validates tracking lookup &amp; delivery status&apos;</span>,{" "}
                   <span className="code-keyword">async</span> (&#123; page &#125;) =&gt; &#123;
                 </p>
                 <p style={{ paddingLeft: "32px" }}>
-                  <span className="code-keyword">const</span> loginPage ={" "}
-                  <span className="code-keyword">new</span> LoginPage(page);
+                  <span className="code-keyword">const</span> trackingPage ={" "}
+                  <span className="code-keyword">new</span> TrackingPage(page);
                 </p>
                 <p style={{ paddingLeft: "32px" }}>
-                  <span className="code-keyword">await</span> loginPage.goto();
+                  <span className="code-keyword">await</span> trackingPage.goto();
                 </p>
                 <p style={{ paddingLeft: "32px" }}>
-                  <span className="code-keyword">await</span> loginPage.login(
-                  <span className="code-string">&apos;tester@domain.com&apos;</span>, <span className="code-string">&apos;SecurePass!&apos;</span>);
+                  <span className="code-keyword">await</span> trackingPage.searchTracking(
+                  <span className="code-string">&apos;9400111899223100001234&apos;</span>);
                 </p>
                 <br />
                 <p style={{ paddingLeft: "32px" }}>
-                  <span className="code-comment">&#47;&#47; Assert dashboard redirected &amp; session stored</span>
+                  <span className="code-comment">&#47;&#47; Assert tracking results &amp; delivery timeline</span>
                 </p>
                 <p style={{ paddingLeft: "32px" }}>
-                  <span className="code-keyword">await</span> expect(page).toHaveURL(<span className="code-string">/\/dashboard/</span>);
+                  <span className="code-keyword">await</span> expect(page).toHaveURL(<span className="code-string">/\/tracking\/results/</span>);
                 </p>
                 <p style={{ paddingLeft: "32px" }}>
-                  <span className="code-keyword">await</span> expect(loginPage.userBadge).toBeVisible();
+                  <span className="code-keyword">await</span> expect(trackingPage.statusBadge).toBeVisible();
                 </p>
                 <p style={{ paddingLeft: "16px" }}>&#125;);</p>
                 <p>&#125;);</p>
@@ -715,56 +705,69 @@ export default function Projects() {
           </div>
         </article>
 
-        {/* 2 Structured Case Studies */}
+        {/* 2 Subgrid Cards */}
         <div className="cases-subgrid" style={{ gridTemplateColumns: "1fr 1fr" }}>
-          {/* Case Study 02: API Validation */}
+          {/* Case Study 02: NRCS Blood Bank */}
           <article className="subcase-card">
             <div
               className="subcase-icon-box"
               style={{
-                background: "rgba(56, 189, 248, 0.12)",
-                color: "#38bdf8",
-                border: "1px solid rgba(56, 189, 248, 0.25)",
+                background: "rgba(239, 68, 68, 0.12)",
+                color: "#f87171",
+                border: "1px solid rgba(239, 68, 68, 0.25)",
               }}
             >
               <Server size={22} />
             </div>
             <div className="case-kicker">
-              <span className="case-type-badge">REST API Validation</span>
+              <span className="case-type-badge">Playwright · REST APIs · Postman</span>
               <span className="meta-chip" style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "0.68rem" }}>
-                <Lock size={11} style={{ color: "#94a3b8" }} /> Private Project
+                <Lock size={11} style={{ color: "#94a3b8" }} /> Skybase · Private
               </span>
             </div>
-            <h3>REST API Validation Suite</h3>
+            <h3>Nepal Red Cross Society — Blood Bank</h3>
             <p>
-              Systematic API test collections structured in Postman to validate endpoint contracts,
-              payload schemas, and response behaviors against Swagger/OpenAPI documentation.
+              Tested the platform used by NRCS to manage blood stock, donor registrations, and compatibility checks. Automated core flows with Playwright and tested backend REST APIs with Postman.
             </p>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", margin: "16px 0 20px", fontSize: "0.82rem", color: "#cbd5e1" }}>
-              <div>
-                <strong style={{ color: "#ffffff" }}>Challenge:</strong> Verifying HTTP status codes, request header authentication, and error message structures across endpoints.
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                <CheckCircle2 size={16} style={{ color: "#34d399", flexShrink: 0, marginTop: "2px" }} />
+                <span><strong style={{ color: "#ffffff" }}>Automated E2E Testing:</strong> Built Playwright tests in TypeScript for donor registration forms, blood inventory searches, and expiry validation.</span>
               </div>
-              <div>
-                <strong style={{ color: "#ffffff" }}>Approach:</strong> Parameterized requests using environment variables, automated bearer token inheritance, and wrote JavaScript response assertions.
-              </div>
-              <div>
-                <strong style={{ color: "#ffffff" }}>Coverage:</strong> GET, POST, PUT, DELETE operations, schema compliance, missing field validation, and negative 4xx/5xx handling.
-              </div>
-              <div>
-                <strong style={{ color: "#ffffff" }}>Key Takeaway:</strong> Catching contract mismatches early at the API level prevented UI-breaking bugs in downstream workflows.
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                <CheckCircle2 size={16} style={{ color: "#34d399", flexShrink: 0, marginTop: "2px" }} />
+                <span><strong style={{ color: "#ffffff" }}>API Testing:</strong> Validated REST API endpoints in Postman against Swagger docs, testing status codes, payload structures, and negative edge cases.</span>
               </div>
             </div>
 
-            <div className="case-tags" style={{ marginTop: "auto" }}>
+            {/* Interactive Defect Ticket Preview Toggle for NRCS */}
+            <div style={{ marginTop: "auto", paddingTop: "14px" }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                style={{ width: "100%", fontSize: "0.78rem", padding: "8px 12px", justifyContent: "space-between" }}
+                onClick={() => setShowBugTicket(!showBugTicket)}
+              >
+                <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <AlertCircle size={14} style={{ color: "#fbbf24" }} />
+                  {showBugTicket ? "Hide Sample Bug Report" : "View Sample Bug Report (NRCS Blood Bank)"}
+                </span>
+                {showBugTicket ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
+            </div>
+
+            <div className="case-tags" style={{ marginTop: "12px" }}>
+              <span className="badge-chip">Playwright</span>
+              <span className="badge-chip">TypeScript</span>
               <span className="badge-chip">Postman</span>
+              <span className="badge-chip">Swagger</span>
               <span className="badge-chip">REST APIs</span>
-              <span className="badge-chip">Swagger / OpenAPI</span>
-              <span className="badge-chip">Negative Testing</span>
+              <span className="badge-chip">Manual Testing</span>
             </div>
           </article>
 
-          {/* Case Study 03: Enterprise Application & Data Validation */}
+          {/* Case Study 03: NIMS Educational Platform */}
           <article className="subcase-card">
             <div
               className="subcase-icon-box"
@@ -777,58 +780,41 @@ export default function Projects() {
               <Database size={22} />
             </div>
             <div className="case-kicker">
-              <span className="case-type-badge">Backend &amp; DB Validation</span>
+              <span className="case-type-badge">Playwright · Manual QA · Jira</span>
               <span className="meta-chip" style={{ display: "inline-flex", alignItems: "center", gap: "4px", fontSize: "0.68rem" }}>
-                <Lock size={11} style={{ color: "#94a3b8" }} /> Private Project
+                <Lock size={11} style={{ color: "#94a3b8" }} /> Skybase · Private
               </span>
             </div>
-            <h3>Enterprise Application &amp; Data Validation</h3>
+            <h3>NIMS — Educational Platform</h3>
             <p>
-              Functional and database-level verification of enterprise software modules, confirming
-              business rule compliance, database record integrity, and cross-session persistence.
+              Tested an educational platform handling student admissions, course enrollments, and student records. Handled automated regression with Playwright alongside manual exploratory testing.
             </p>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", margin: "16px 0 20px", fontSize: "0.82rem", color: "#cbd5e1" }}>
-              <div>
-                <strong style={{ color: "#ffffff" }}>Challenge:</strong> Ensuring user actions and multi-step transaction forms correctly mutate database states without silent failures.
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                <CheckCircle2 size={16} style={{ color: "#34d399", flexShrink: 0, marginTop: "2px" }} />
+                <span><strong style={{ color: "#ffffff" }}>Automated E2E Testing:</strong> Wrote automated tests in Playwright (TypeScript) using Page Object Model for student registration, course sign-up, and fee checkout.</span>
               </div>
-              <div>
-                <strong style={{ color: "#ffffff" }}>Approach:</strong> Paired manual and functional exploratory testing with targeted SQL queries to inspect raw table entries and foreign key references.
-              </div>
-              <div>
-                <strong style={{ color: "#ffffff" }}>Coverage:</strong> Functional workflows, data consistency across updates, edge-case transactions, and detailed defect reporting in Jira/ClickUp.
-              </div>
-              <div>
-                <strong style={{ color: "#ffffff" }}>Key Takeaway:</strong> Directly inspecting backend data verified that the UI was not merely displaying cached or uncommitted information.
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                <CheckCircle2 size={16} style={{ color: "#34d399", flexShrink: 0, marginTop: "2px" }} />
+                <span><strong style={{ color: "#ffffff" }}>Manual QA &amp; Bug Tracking:</strong> Ran smoke, exploratory, and edge-case testing across web flows, logging clear reproducible tickets in Jira and ClickUp.</span>
               </div>
             </div>
 
-            {/* Interactive Defect Ticket Preview Toggle */}
-            <div style={{ marginTop: "auto", paddingTop: "12px" }}>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                style={{ width: "100%", fontSize: "0.78rem", padding: "8px 12px", justifyContent: "space-between" }}
-                onClick={() => setShowBugTicket(!showBugTicket)}
-              >
-                <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <AlertCircle size={14} style={{ color: "#fbbf24" }} />
-                  {showBugTicket ? "Hide Bug Report Ticket" : "Inspect Sample Bug Report (Jira #QA-104)"}
-                </span>
-                {showBugTicket ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-              </button>
-            </div>
-
-            <div className="case-tags" style={{ marginTop: "12px" }}>
-              <span className="badge-chip">SQL</span>
-              <span className="badge-chip">Database Validation</span>
-              <span className="badge-chip">Functional QA</span>
-              <span className="badge-chip">Defect Triage</span>
+            <div className="case-tags" style={{ marginTop: "auto", paddingTop: "14px" }}>
+              <span className="badge-chip">Playwright</span>
+              <span className="badge-chip">TypeScript</span>
+              <span className="badge-chip">Manual Testing</span>
+              <span className="badge-chip">Smoke Testing</span>
+              <span className="badge-chip">Exploratory Testing</span>
+              <span className="badge-chip">Edge-Case Identification</span>
+              <span className="badge-chip">Jira</span>
+              <span className="badge-chip">ClickUp</span>
             </div>
           </article>
         </div>
 
-        {/* Interactive Defect Report Card (Expands when toggled) */}
+        {/* Interactive Defect Report Card — NRCS Blood Bank */}
         {showBugTicket && (
           <div
             style={{
@@ -864,16 +850,16 @@ export default function Projects() {
                     fontWeight: 700,
                   }}
                 >
-                  BUG-104
+                  BUG-207
                 </span>
                 <span style={{ color: "#ffffff", fontWeight: 600, fontSize: "0.95rem" }}>
-                  Session authentication token persists in localStorage after explicit user logout
+                  Blood unit with expired cross-match still shows as &quot;Available&quot; in search
                 </span>
               </div>
 
               <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                <span className="badge-chip" style={{ color: "#fbbf24", borderColor: "rgba(251, 191, 36, 0.3)" }}>
-                  Priority: High (P1)
+                <span className="badge-chip" style={{ color: "#ef4444", borderColor: "rgba(239, 68, 68, 0.3)" }}>
+                  Priority: Critical (P0)
                 </span>
                 <span className="badge-chip" style={{ color: "#34d399", borderColor: "rgba(16, 185, 129, 0.3)" }}>
                   Status: Verified &amp; Closed
@@ -894,10 +880,10 @@ export default function Projects() {
                 borderRadius: "8px",
               }}
             >
-              <div><strong>Environment:</strong> Staging / Build v1.4.2</div>
-              <div><strong>Browser:</strong> Chrome 124 (macOS Sonoma)</div>
-              <div><strong>Reproduction Rate:</strong> 100% (5/5 attempts)</div>
-              <div><strong>Reporter:</strong> Nirvaya Ligal (QA)</div>
+              <div><strong>Project:</strong> Nepal Red Cross Society (NRCS) Blood Bank</div>
+              <div><strong>Module:</strong> Blood Inventory &amp; Compatibility Search</div>
+              <div><strong>Found Via:</strong> Exploratory Testing &amp; Time Boundary Check</div>
+              <div><strong>Reported By:</strong> Nirvaya Ligal (QA) · Skybase</div>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "0.83rem", color: "#cbd5e1" }}>
@@ -906,28 +892,29 @@ export default function Projects() {
                   Steps to Reproduce:
                 </strong>
                 <ol style={{ margin: 0, paddingLeft: "20px", display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <li>Log into the application with valid test credentials (<code style={{ color: "#38bdf8" }}>tester@domain.com</code>).</li>
-                  <li>Click user profile menu in navigation bar and select <strong>&quot;Sign Out&quot;</strong>.</li>
-                  <li>Open Chrome DevTools &gt; <em>Application &gt; Local Storage</em> and inspect <code style={{ color: "#38bdf8" }}>auth_session_token</code>.</li>
-                  <li>Manually enter protected route URL: <code style={{ color: "#38bdf8" }}>https://staging.app/dashboard</code>.</li>
+                  <li>Go to <strong>Inventory → Compatibility Search</strong>.</li>
+                  <li>Select recipient blood type <code style={{ color: "#38bdf8" }}>O+</code> and click Search.</li>
+                  <li>Look at unit <code style={{ color: "#38bdf8" }}>UNIT-BU-4421</code> — it shows a green <strong>&quot;Available&quot;</strong> badge.</li>
+                  <li>Click to view unit details: cross-match was done <strong>72 hours and 14 minutes ago</strong>.</li>
+                  <li>The validity limit is 72 hours, meaning the cross-match expired 14 minutes before the search.</li>
                 </ol>
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
                 <div style={{ padding: "10px 14px", borderRadius: "8px", background: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.2)" }}>
                   <strong style={{ color: "#f87171", display: "block", marginBottom: "4px" }}>Actual Result:</strong>
-                  <span>Protected route briefly renders; session token remains stored in localStorage without server-side revocation.</span>
+                  <span>The expired unit was still listed as available, which could let staff accidentally issue an un-verified unit to a patient.</span>
                 </div>
                 <div style={{ padding: "10px 14px", borderRadius: "8px", background: "rgba(16, 185, 129, 0.08)", border: "1px solid rgba(16, 185, 129, 0.2)" }}>
                   <strong style={{ color: "#34d399", display: "block", marginBottom: "4px" }}>Expected Result:</strong>
-                  <span>Tokens are purged immediately from storage; request redirects to <code style={{ color: "#38bdf8" }}>/login</code> with HTTP 401.</span>
+                  <span>Units with expired cross-match should either be hidden from results or clearly marked with a &quot;Needs Re-Test&quot; badge.</span>
                 </div>
               </div>
 
               <div style={{ padding: "10px 14px", borderRadius: "8px", background: "rgba(56, 189, 248, 0.06)", border: "1px solid rgba(56, 189, 248, 0.2)" }}>
-                <strong style={{ color: "#38bdf8", display: "block", marginBottom: "2px" }}>Root Cause &amp; Retest Verification:</strong>
+                <strong style={{ color: "#38bdf8", display: "block", marginBottom: "2px" }}>Root Cause &amp; Retest:</strong>
                 <span>
-                  Backend logout endpoint was returning 200 without issuing a Redis blacklist token invalidate command. Fixed in PR #142; retested across Chrome, Firefox, and Safari on staging. Regression test automated in Playwright.
+                  The expiry check was comparing dates at midnight instead of comparing exact timestamps, creating an unintended grace period. Fixed in PR #89, verified on staging, and added an automated Playwright test to guard against regressions.
                 </span>
               </div>
             </div>
@@ -954,7 +941,7 @@ export default function Projects() {
               <div className="postman-breadcrumb">
                 <span className="breadcrumb-workspace">My Workspace</span>
                 <span className="breadcrumb-divider">/</span>
-                <span className="breadcrumb-collection">QA Automation Test Suite</span>
+                <span className="breadcrumb-collection">NRCS Blood Bank API Suite</span>
               </div>
             </div>
 
@@ -962,14 +949,14 @@ export default function Projects() {
               {/* Environment Selector */}
               <div className="postman-env-badge" title="Active Environment Profile">
                 <Globe size={13} style={{ color: "#38bdf8" }} />
-                <span>Staging-US-East (Active)</span>
+                <span>Staging-NRCS (Active)</span>
                 <ChevronDown size={12} style={{ color: "#94a3b8" }} />
               </div>
 
               <button
                 type="button"
                 className="postman-quick-look-btn"
-                title="Environment Quick Look: baseUrl, authToken, userId"
+                title="Environment Quick Look: baseUrl, authToken, branchCode"
               >
                 <Eye size={13} />
               </button>
@@ -1021,7 +1008,7 @@ export default function Projects() {
 
             {/* URL Input Bar with {{baseUrl}} environment token */}
             <div className="postman-url-input-container">
-              <span className="postman-env-token" title="Environment Variable: https://api.staging.nirvaya-qa.dev">
+              <span className="postman-env-token" title="Environment Variable: https://api.staging.nrcs-bloodbank.org.np">
                 {"{{baseUrl}}"}
               </span>
               <span className="postman-url-path">{currentEndpoint.path}</span>
@@ -1170,7 +1157,7 @@ export default function Projects() {
                           readOnly
                         />
                         <p className="auth-help-text">
-                          This token is injected into the <code>Authorization: Bearer</code> header automatically on request dispatch.
+                          Injected into the <code>Authorization: Bearer</code> header automatically on send.
                         </p>
                       </div>
                     ) : (
@@ -1227,7 +1214,7 @@ export default function Projects() {
                 {requestTab === "tests" && (
                   <div className="postman-tests-pane">
                     <div className="postman-script-header">
-                      <span>Postman Sandbox JavaScript Tests Script</span>
+                      <span>Postman JavaScript Tests</span>
                       <span className="script-env-tag">pm.* runtime</span>
                     </div>
                     <TestScriptViewer script={currentEndpoint.testScript} />
@@ -1244,7 +1231,7 @@ export default function Projects() {
                   <div className="sending-spinner-circle">
                     <Loader2 size={32} className="animate-spin" style={{ color: "#097bed" }} />
                   </div>
-                  <h4 className="state-box-title">Dispatching HTTP Request...</h4>
+                  <h4 className="state-box-title">Sending Request...</h4>
                   <p className="state-box-subtitle">
                     {sendingPhase || `Sending ${currentEndpoint.method} request to ${currentEndpoint.path}`}
                   </p>
@@ -1253,18 +1240,18 @@ export default function Projects() {
                     <span className="tx-sep">→</span>
                     <span className="tx-step tx-done">✓ TLS Handshake</span>
                     <span className="tx-sep">→</span>
-                    <span className="tx-step tx-active">● Awaiting Response</span>
+                    <span className="tx-step tx-active">● Waiting for Response</span>
                   </div>
                 </div>
               ) : !hasExecuted || !liveResult ? (
-                /* Authentic Postman Unsent Ready State */
+                /* Postman Unsent Ready State */
                 <div className="postman-pane-state-box">
                   <div className="postman-state-icon">
                     <PostmanLogo size={42} />
                   </div>
-                  <h4 className="state-box-title">Hit &quot;Send&quot; to execute request</h4>
+                  <h4 className="state-box-title">Hit &quot;Send&quot; to test this endpoint live</h4>
                   <p className="state-box-subtitle">
-                    Dispatches live HTTP <strong style={{ color: currentEndpoint.method === "GET" ? "#34d399" : "#ff6c37" }}>{currentEndpoint.method}</strong> request to <code style={{ color: "#38bdf8" }}>{currentEndpoint.path}</code> ({scenario === "positive" ? "Happy Path 200/201" : "Error Boundary Path"}) and inspects live status code &amp; output.
+                    Sends a live HTTP <strong style={{ color: currentEndpoint.method === "GET" ? "#34d399" : "#ff6c37" }}>{currentEndpoint.method}</strong> request to <code style={{ color: "#38bdf8" }}>{currentEndpoint.path}</code> ({scenario === "positive" ? "Happy Path 200/201" : "Error Boundary Path"}) and inspects response data and test results.
                   </p>
                   <button
                     type="button"
@@ -1320,7 +1307,7 @@ export default function Projects() {
                         className={`postman-subtab ${responseTab === "strategy" ? "active" : ""}`}
                         onClick={() => setResponseTab("strategy")}
                       >
-                        QA Strategy
+                        Why We Test This
                       </button>
                     </div>
 
@@ -1444,7 +1431,7 @@ export default function Projects() {
                     {responseTab === "console" && (
                       <div className="postman-console-wrapper">
                         <div className="postman-console-bar">
-                          <span>Postman Console Network Trace</span>
+                          <span>Postman Console Output</span>
                           <span style={{ color: "#34d399" }}>HTTP/1.1 {liveResult.statusCode}</span>
                         </div>
                         <div className="postman-code-editor">
@@ -1474,23 +1461,23 @@ export default function Projects() {
                         <div className="strategy-card">
                           <div className="strategy-title">
                             <ShieldCheck size={15} style={{ color: "#38bdf8" }} />
-                            <span>QA Engineering Validation Rationale</span>
+                            <span>Why We Test This Endpoint</span>
                           </div>
                           <p className="strategy-body">{activeData.qaContext}</p>
                         </div>
 
                         <div className="strategy-metrics-row">
                           <div className="strategy-mini-box">
-                            <span className="mini-label">Pipeline Trigger:</span>
-                            <span className="mini-value">GitHub Actions / Newman CLI</span>
+                            <span className="mini-label">Tools Used:</span>
+                            <span className="mini-value">Postman &amp; Swagger</span>
                           </div>
                           <div className="strategy-mini-box">
-                            <span className="mini-label">Test Automation Type:</span>
-                            <span className="mini-value">Automated Contract &amp; Schema Regression</span>
+                            <span className="mini-label">What We Check:</span>
+                            <span className="mini-value">Status Codes, JSON Data &amp; Edge Cases</span>
                           </div>
                           <div className="strategy-mini-box">
-                            <span className="mini-label">SLA Enforcement:</span>
-                            <span className="mini-value">p95 Latency &lt; 100ms</span>
+                            <span className="mini-label">Total APIs Tested:</span>
+                            <span className="mini-value">60+ Endpoints</span>
                           </div>
                         </div>
                       </div>

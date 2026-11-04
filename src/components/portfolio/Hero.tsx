@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   ArrowDown,
@@ -10,9 +9,7 @@ import {
   Copy,
   Loader2,
   Mail,
-  MapPin,
   Play,
-  RotateCw,
   ShieldCheck,
   Terminal,
 } from "lucide-react";
@@ -34,12 +31,12 @@ function GitHubIcon({ size = 16 }: { size?: number }) {
 }
 
 const verifiedPills = [
-  "Manual Testing",
-  "REST API Testing",
-  "Playwright (TS)",
-  "Postman",
-  "SQL Validation",
-  "Defect Reporting",
+  "Manual & Smoke Testing",
+  "Exploratory & Edge Cases",
+  "Playwright & TypeScript (POM)",
+  "REST APIs & Postman (60+)",
+  "Oracle SQL DB Checks",
+  "Jenkins CI & Unix",
 ];
 
 type SuiteId = "playwright" | "postman" | "sql";
@@ -62,29 +59,29 @@ const testSuites: Record<SuiteId, TestSuite> = {
     command: "npx playwright test --project=chromium",
     runnerTitle: "playwright-runner — bash",
     specs: [
-      { name: "e2e/auth-session.spec.ts", time: "18ms" },
-      { name: "e2e/navigation-flows.spec.ts", time: "24ms" },
-      { name: "e2e/form-validation.spec.ts", time: "32ms" },
+      { name: "e2e/usps-mail-tracking.spec.ts", time: "18ms" },
+      { name: "e2e/nrcs-blood-inventory.spec.ts", time: "24ms" },
+      { name: "e2e/nims-enrollment-flow.spec.ts", time: "32ms" },
     ],
   },
   postman: {
     tabName: "Postman API",
-    command: "newman run collections/auth-api.json",
+    command: "newman run collections/nrcs-bloodbank-api.json",
     runnerTitle: "newman-cli — node",
     specs: [
-      { name: "GET /api/v1/auth/verify (200 OK)", time: "12ms" },
-      { name: "POST /api/v1/users/register (201 Created)", time: "22ms" },
-      { name: "POST /api/v1/auth/login [Negative 401]", time: "14ms" },
+      { name: "GET /api/v1/blood-bank/inventory (200 OK)", time: "12ms" },
+      { name: "POST /api/v1/donors/register (201 Created)", time: "22ms" },
+      { name: "GET /api/v1/blood-bank/inventory?type=AB_NEG [404]", time: "14ms" },
     ],
   },
   sql: {
-    tabName: "SQL Checks",
-    command: "psql -f tests/db-verification.sql",
-    runnerTitle: "postgres-client — sql",
+    tabName: "Oracle SQL",
+    command: "sqlplus -s qa_tester@USPS_DB @verify-records.sql",
+    runnerTitle: "oracle-sqlplus — sql",
     specs: [
-      { name: "SELECT count(*) FROM users (not null)", time: "8ms" },
-      { name: "CHECK foreign_keys(transactions)", time: "14ms" },
-      { name: "ASSERT zero_orphan_records()", time: "11ms" },
+      { name: "SELECT count(*) FROM usps_tracking_events", time: "8ms" },
+      { name: "CHECK foreign_keys(parcel_shipments)", time: "14ms" },
+      { name: "ASSERT zero_orphan_delivery_records()", time: "11ms" },
     ],
   },
 };
@@ -93,7 +90,6 @@ export default function Hero() {
   const prefersReducedMotion = useReducedMotion() ?? false;
   const [copied, setCopied] = useState(false);
 
-  // Interactive Live Runner State
   const [activeSuite, setActiveSuite] = useState<SuiteId>("playwright");
   const [isRunning, setIsRunning] = useState(false);
   const [completedSteps, setCompletedSteps] = useState(3);
@@ -144,12 +140,12 @@ export default function Hero() {
   return (
     <section className="hero-section section-shell" id="home">
       <div className="hero-grid">
-        {/* Left Column: Authoritative Copy */}
+        {/* Left Column: Clear Humanized Intro */}
         <div className="hero-copy">
           <motion.div className="hero-availability" {...fadeInUp(0.1)}>
             <span className="status-pill">
               <span className="status-pill-dot" />
-              <span>Open to QA / Software Testing Opportunities · Pokhara / Remote</span>
+              <span>Open to QA &amp; Software Testing Roles · 2026 Graduate · Pokhara / Remote</span>
             </span>
           </motion.div>
 
@@ -171,18 +167,18 @@ export default function Hero() {
             }}
             {...fadeInUp(0.35)}
           >
-            Manual Testing · API Testing · Test Automation
+            Manual QA · Playwright Automation · API Testing · Oracle SQL
           </motion.div>
 
           <motion.div className="hero-description" {...fadeInUp(0.4)}>
             <p style={{ margin: "0 0 12px", color: "#f1f5f9", fontWeight: 500 }}>
-              Building confidence in software through thoughtful testing, practical automation, and clear defect reporting.
+              2026 graduate building reliable software through thoughtful manual testing, Playwright automation, and clear defect reporting.
             </p>
             <p style={{ margin: "0 0 12px", fontSize: "0.95rem" }}>
-              QA Engineer with hands-on experience in manual exploratory testing, REST API validation in Postman, and automated regression testing using Playwright and TypeScript.
+              Hands-on testing experience on USPS at TechStaffing Hub, and Nepal Red Cross Society Blood Bank and NIMS educational platform at Skybase.
             </p>
             <p style={{ margin: 0, fontSize: "0.88rem", color: "#94a3b8" }}>
-              Experienced with SQL database checks, bug tracking in Jira and ClickUp, and disciplined professional operations.
+              Experienced with Playwright (TypeScript &amp; POM), smoke and exploratory testing, 60+ API tests in Postman, Oracle SQL database verification, and Jenkins on Unix.
             </p>
           </motion.div>
 
@@ -228,7 +224,7 @@ export default function Hero() {
           </motion.div>
 
           <motion.div className="hero-badges-row" {...fadeInUp(0.6)}>
-            <span className="hero-badges-label">Core Capabilities &amp; Technical Stack</span>
+            <span className="hero-badges-label">Core Skills &amp; Everyday Tools</span>
             <div className="hero-badges-list">
               {verifiedPills.map((pill) => (
                 <span className="badge-chip" key={pill}>
@@ -240,39 +236,13 @@ export default function Hero() {
           </motion.div>
         </div>
 
-        {/* Right Column: Headshot & Interactive Test Runner */}
+        {/* Right Column: Interactive Test Runner */}
         <motion.div
           className="hero-visual-container"
           initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.35, duration: 0.5, ease: [0.16, 1, 0.3, 1] as const }}
         >
-          {/* Framed Headshot Card */}
-          <div className="portrait-card">
-            <div className="portrait-image-wrapper">
-              <Image
-                src="/portrait.jpeg"
-                alt="Nirvaya Ligal - QA Engineer & Software Tester"
-                width={800}
-                height={1000}
-                priority
-                className="portrait-image"
-              />
-              <div className="portrait-gradient-overlay" />
-              <div className="portrait-meta-bar">
-                <div>
-                  <strong>Nirvaya Ligal</strong>
-                  <span>
-                    <MapPin size={12} /> Pokhara, Nepal
-                  </span>
-                </div>
-                <span className="badge-chip" style={{ fontSize: "0.68rem" }}>
-                  QA / Software Testing
-                </span>
-              </div>
-            </div>
-          </div>
-
           {/* Live Interactive Test Execution Console */}
           <div className="terminal-card">
             {/* Header with Title and Dots */}
@@ -333,7 +303,7 @@ export default function Hero() {
                 $ <span>{currentSuite.command}</span>
               </div>
               <div style={{ color: "#94a3b8", fontSize: "0.7rem", marginBottom: "8px" }}>
-                {isRunning ? "Executing test runner..." : "Suite ready:"}
+                {isRunning ? "Running tests..." : "Suite ready:"}
               </div>
 
               {currentSuite.specs.map((spec, index) => {
@@ -343,12 +313,13 @@ export default function Hero() {
                 return (
                   <div
                     key={spec.name}
-                    className={`terminal-row ${isPassed
+                    className={`terminal-row ${
+                      isPassed
                         ? "terminal-row-success"
                         : isCurrent
                           ? "terminal-row-running"
                           : "terminal-row-pending"
-                      }`}
+                    }`}
                   >
                     <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                       {isPassed ? (

@@ -10,7 +10,7 @@ export default function Education() {
         </div>
         <h2>Education.</h2>
         <p>
-          Academic foundation in computer information systems, software architecture, and database management.
+          Academic foundation in computer information systems, database management, and software testing principles.
         </p>
       </div>
 
@@ -32,7 +32,7 @@ export default function Education() {
               <GraduationCap size={22} />
             </div>
             <span className="meta-chip meta-chip-highlight" style={{ fontSize: "0.72rem" }}>
-              Targeting 2027
+              2026 Graduate
             </span>
           </div>
 
@@ -43,7 +43,7 @@ export default function Education() {
             Pokhara College of Management · Pokhara University
           </p>
           <p className="matrix-card-copy" style={{ margin: 0, fontSize: "0.85rem", lineHeight: 1.65 }}>
-            Coursework in software systems, relational database management, systems analysis, and application development. Currently in final-stage semester coursework.
+            Coursework in software systems, database management (SQL), systems analysis, and web development. Graduating class of 2026.
           </p>
         </article>
       </div>

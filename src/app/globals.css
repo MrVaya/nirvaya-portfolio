@@ -1563,11 +1563,10 @@ a {
 }
 
 .subcase-card p {
-  margin: 0 0 20px;
+  margin: 0 0 16px;
   font-size: 0.85rem;
   line-height: 1.65;
   color: var(--muted-foreground);
-  flex-grow: 1;
 }
 
 /* =========================================================================
