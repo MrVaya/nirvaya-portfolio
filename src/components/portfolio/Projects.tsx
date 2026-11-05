@@ -706,7 +706,7 @@ export default function Projects() {
         </article>
 
         {/* 2 Subgrid Cards */}
-        <div className="cases-subgrid" style={{ gridTemplateColumns: "1fr 1fr" }}>
+        <div className="cases-subgrid">
           {/* Case Study 02: NRCS Blood Bank */}
           <article className="subcase-card">
             <div
@@ -900,7 +900,7 @@ export default function Projects() {
                 </ol>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+              <div className="bug-actual-expected-grid">
                 <div style={{ padding: "10px 14px", borderRadius: "8px", background: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.2)" }}>
                   <strong style={{ color: "#f87171", display: "block", marginBottom: "4px" }}>Actual Result:</strong>
                   <span>The expired unit was still listed as available, which could let staff accidentally issue an un-verified unit to a patient.</span>

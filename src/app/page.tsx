@@ -7,6 +7,7 @@ import Hero from "@/components/portfolio/Hero";
 import Navbar from "@/components/portfolio/Navbar";
 import Projects from "@/components/portfolio/Projects";
 import Skills from "@/components/portfolio/Skills";
+import TestingPlaybook from "@/components/portfolio/TestingPlaybook";
 
 export default function Home() {
   return (
@@ -14,6 +15,7 @@ export default function Home() {
       <BackgroundGlow />
       <Navbar />
       <Hero />
+      <TestingPlaybook />
       <Experience />
       <Projects />
       <Skills />

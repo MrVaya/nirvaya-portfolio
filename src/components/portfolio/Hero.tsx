@@ -1,17 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import {
+  Activity,
+  AlertTriangle,
   ArrowDown,
   Check,
   CheckCircle2,
+  Clock,
+  Code2,
   Copy,
+  Database,
+  GraduationCap,
+  Layers,
   Loader2,
   Mail,
+  MapPin,
   Play,
+  Server,
   ShieldCheck,
+  Sparkles,
   Terminal,
+  Zap,
 } from "lucide-react";
 
 function LinkedInIcon({ size = 16 }: { size?: number }) {
@@ -31,12 +42,12 @@ function GitHubIcon({ size = 16 }: { size?: number }) {
 }
 
 const verifiedPills = [
-  "Manual & Smoke Testing",
-  "Exploratory & Edge Cases",
-  "Playwright & TypeScript (POM)",
-  "REST APIs & Postman (60+)",
-  "Oracle SQL DB Checks",
-  "Jenkins CI & Unix",
+  { label: "Manual & Smoke QA", accent: "#38bdf8" },
+  { label: "Exploratory & Edge Cases", accent: "#f59e0b" },
+  { label: "Playwright POM (TypeScript)", accent: "#10b981" },
+  { label: "60+ REST APIs (Postman)", accent: "#fb923c" },
+  { label: "Oracle SQL DB Verification", accent: "#ef4444" },
+  { label: "Jenkins CI & Unix Shell", accent: "#a855f7" },
 ];
 
 type SuiteId = "playwright" | "postman" | "sql";
@@ -44,12 +55,14 @@ type SuiteId = "playwright" | "postman" | "sql";
 interface TestSpec {
   name: string;
   time: string;
+  status: string;
 }
 
 interface TestSuite {
   tabName: string;
   command: string;
   runnerTitle: string;
+  badgeColor: string;
   specs: TestSpec[];
 }
 
@@ -58,42 +71,98 @@ const testSuites: Record<SuiteId, TestSuite> = {
     tabName: "Playwright E2E",
     command: "npx playwright test --project=chromium",
     runnerTitle: "playwright-runner — bash",
+    badgeColor: "#10b981",
     specs: [
-      { name: "e2e/usps-mail-tracking.spec.ts", time: "18ms" },
-      { name: "e2e/nrcs-blood-inventory.spec.ts", time: "24ms" },
-      { name: "e2e/nims-enrollment-flow.spec.ts", time: "32ms" },
+      { name: "e2e/usps-mail-tracking.spec.ts", time: "18ms", status: "PASS" },
+      { name: "e2e/nrcs-blood-inventory.spec.ts", time: "24ms", status: "PASS" },
+      { name: "e2e/nims-enrollment-flow.spec.ts", time: "32ms", status: "PASS" },
     ],
   },
   postman: {
-    tabName: "Postman API",
+    tabName: "Postman API (60+)",
     command: "newman run collections/nrcs-bloodbank-api.json",
     runnerTitle: "newman-cli — node",
+    badgeColor: "#fb923c",
     specs: [
-      { name: "GET /api/v1/blood-bank/inventory (200 OK)", time: "12ms" },
-      { name: "POST /api/v1/donors/register (201 Created)", time: "22ms" },
-      { name: "GET /api/v1/blood-bank/inventory?type=AB_NEG [404]", time: "14ms" },
+      { name: "GET /api/v1/blood-bank/inventory (200 OK)", time: "12ms", status: "200 OK" },
+      { name: "POST /api/v1/donors/register (201 Created)", time: "22ms", status: "201 OK" },
+      { name: "GET /api/v1/blood-bank/inventory?type=AB_NEG [404]", time: "14ms", status: "404 CATCH" },
     ],
   },
   sql: {
-    tabName: "Oracle SQL",
+    tabName: "Oracle SQL DB",
     command: "sqlplus -s qa_tester@USPS_DB @verify-records.sql",
     runnerTitle: "oracle-sqlplus — sql",
+    badgeColor: "#38bdf8",
     specs: [
-      { name: "SELECT count(*) FROM usps_tracking_events", time: "8ms" },
-      { name: "CHECK foreign_keys(parcel_shipments)", time: "14ms" },
-      { name: "ASSERT zero_orphan_delivery_records()", time: "11ms" },
+      { name: "SELECT count(*) FROM usps_tracking_events", time: "8ms", status: "VALID" },
+      { name: "CHECK foreign_keys(parcel_shipments)", time: "14ms", status: "INTEGRITY OK" },
+      { name: "ASSERT zero_orphan_delivery_records()", time: "11ms", status: "0 ORPHANS" },
     ],
   },
 };
 
+const impactMetrics = [
+  {
+    value: "3",
+    label: "Production Systems",
+    desc: "USPS · NRCS Blood Bank · NIMS",
+    color: "#38bdf8",
+    icon: Layers,
+  },
+  {
+    value: "60+",
+    label: "REST APIs Tested",
+    desc: "Postman, Swagger & Edge Cases",
+    color: "#fb923c",
+    icon: Server,
+  },
+  {
+    value: "30+",
+    label: "Playwright E2E Tests",
+    desc: "Page Object Model in TypeScript",
+    color: "#10b981",
+    icon: Code2,
+  },
+  {
+    value: "P0",
+    label: "Critical Defect Caught",
+    desc: "Expired cross-match timestamp bug",
+    color: "#ef4444",
+    icon: AlertTriangle,
+  },
+];
+
 export default function Hero() {
   const prefersReducedMotion = useReducedMotion() ?? false;
   const [copied, setCopied] = useState(false);
+  const [nepalTime, setNepalTime] = useState<string>("");
 
   const [activeSuite, setActiveSuite] = useState<SuiteId>("playwright");
   const [isRunning, setIsRunning] = useState(false);
   const [completedSteps, setCompletedSteps] = useState(3);
   const [progress, setProgress] = useState(100);
+
+  useEffect(() => {
+    const updateTime = () => {
+      try {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString("en-US", {
+          timeZone: "Asia/Kathmandu",
+          hour: "numeric",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: true,
+        });
+        setNepalTime(timeStr);
+      } catch {
+        setNepalTime("Pokhara Time");
+      }
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleCopyEmail = () => {
     navigator.clipboard.writeText("nirvaya22@gmail.com");
@@ -139,58 +208,75 @@ export default function Hero() {
 
   return (
     <section className="hero-section section-shell" id="home">
+      {/* Top Status & Live Location Bar */}
+      <motion.div className="hero-top-status-bar" {...fadeInUp(0.05)}>
+        <div className="hero-status-left">
+          <span className="hero-status-tag">
+            <span className="live-pulse-dot" />
+            <span>Open to QA Roles</span>
+          </span>
+
+          <span className="hero-grad-tag">
+            <GraduationCap size={13} style={{ color: "#38bdf8" }} />
+            <span>2026 Graduate</span>
+          </span>
+        </div>
+
+        <div className="hero-status-right">
+          <span className="hero-time-pill" title="Live Local Time in Pokhara, Nepal (UTC+5:45)">
+            <MapPin size={12} style={{ color: "#34d399" }} />
+            <span>Pokhara, Nepal</span>
+            <span className="hero-time-sep">·</span>
+            <Clock size={12} style={{ color: "#38bdf8" }} />
+            <span className="hero-live-clock">{nepalTime || "Loading..."} NPT</span>
+          </span>
+        </div>
+      </motion.div>
+
       <div className="hero-grid">
         {/* Left Column: Clear Humanized Intro */}
         <div className="hero-copy">
-          <motion.div className="hero-availability" {...fadeInUp(0.1)}>
-            <span className="status-pill">
-              <span className="status-pill-dot" />
-              <span>Open to QA &amp; Software Testing Roles · 2026 Graduate · Pokhara / Remote</span>
-            </span>
+          <motion.div className="hero-eyebrow-chip" {...fadeInUp(0.15)}>
+            <Sparkles size={13} style={{ color: "#38bdf8" }} />
+            <span>Practical Quality Assurance &amp; Test Automation</span>
           </motion.div>
 
           <motion.h1 className="hero-title" {...fadeInUp(0.2)}>
             NIRVAYA LIGAL
           </motion.h1>
 
-          <motion.div className="hero-subtitle" {...fadeInUp(0.3)}>
-            QA Engineer | Software Tester
+          <motion.div className="hero-subtitle" {...fadeInUp(0.25)}>
+            QA Engineer · Software Tester
           </motion.div>
 
-          <motion.div
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "0.85rem",
-              color: "#38bdf8",
-              marginTop: "8px",
-              letterSpacing: "0.04em",
-            }}
-            {...fadeInUp(0.35)}
-          >
-            Manual QA · Playwright Automation · API Testing · Oracle SQL
+          <motion.div className="hero-skills-headline" {...fadeInUp(0.3)}>
+            Manual QA · Playwright Automation · REST APIs · Oracle SQL
           </motion.div>
 
-          <motion.div className="hero-description" {...fadeInUp(0.4)}>
-            <p style={{ margin: "0 0 12px", color: "#f1f5f9", fontWeight: 500 }}>
+          <motion.div className="hero-description" {...fadeInUp(0.35)}>
+            <p className="hero-desc-lead">
               2026 graduate building reliable software through thoughtful manual testing, Playwright automation, and clear defect reporting.
             </p>
-            <p style={{ margin: "0 0 12px", fontSize: "0.95rem" }}>
-              Hands-on testing experience on USPS at TechStaffing Hub, and Nepal Red Cross Society Blood Bank and NIMS educational platform at Skybase.
+            <p className="hero-desc-sub">
+              Hands-on testing experience on <strong>USPS</strong> at TechStaffing Hub, and <strong>Nepal Red Cross Society Blood Bank</strong> and <strong>NIMS</strong> educational platform at Skybase.
             </p>
-            <p style={{ margin: 0, fontSize: "0.88rem", color: "#94a3b8" }}>
-              Experienced with Playwright (TypeScript &amp; POM), smoke and exploratory testing, 60+ API tests in Postman, Oracle SQL database verification, and Jenkins on Unix.
+            <p className="hero-desc-tools">
+              Skilled in Playwright (TypeScript &amp; POM), smoke and exploratory testing, 60+ API tests in Postman, Oracle SQL database verification, and Jenkins on Unix.
             </p>
           </motion.div>
 
-          <motion.div className="hero-actions" {...fadeInUp(0.5)}>
+          <motion.div className="hero-actions" {...fadeInUp(0.4)}>
             <a className="btn btn-primary" href="#projects">
               View Projects <ArrowDown size={16} />
+            </a>
+            <a className="btn btn-secondary" href="#playbook">
+              <ShieldCheck size={16} /> QA Mindset
             </a>
             <a className="btn btn-secondary" href="#contact">
               <Mail size={16} /> Contact Me
             </a>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginLeft: "4px" }}>
+            <div className="hero-social-strip">
               <a
                 className="footer-icon-btn"
                 href="https://github.com/MrVaya"
@@ -223,13 +309,24 @@ export default function Hero() {
             </div>
           </motion.div>
 
-          <motion.div className="hero-badges-row" {...fadeInUp(0.6)}>
+          {/* Core Skills & Badges */}
+          <motion.div className="hero-badges-row" {...fadeInUp(0.45)}>
             <span className="hero-badges-label">Core Skills &amp; Everyday Tools</span>
             <div className="hero-badges-list">
               {verifiedPills.map((pill) => (
-                <span className="badge-chip" key={pill}>
-                  <ShieldCheck size={13} style={{ color: "#38bdf8" }} />
-                  {pill}
+                <span
+                  className="badge-chip hero-colored-chip"
+                  key={pill.label}
+                  style={{
+                    borderColor: `${pill.accent}33`,
+                    background: `${pill.accent}0d`,
+                  }}
+                >
+                  <span
+                    className="chip-dot"
+                    style={{ background: pill.accent, boxShadow: `0 0 6px ${pill.accent}` }}
+                  />
+                  {pill.label}
                 </span>
               ))}
             </div>
@@ -241,7 +338,7 @@ export default function Hero() {
           className="hero-visual-container"
           initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.35, duration: 0.5, ease: [0.16, 1, 0.3, 1] as const }}
+          transition={{ delay: 0.3, duration: 0.5, ease: [0.16, 1, 0.3, 1] as const }}
         >
           {/* Live Interactive Test Execution Console */}
           <div className="terminal-card">
@@ -253,22 +350,45 @@ export default function Hero() {
                 <i className="dot-green" />
               </div>
               <span className="terminal-title">{currentSuite.runnerTitle}</span>
-              <Terminal size={13} style={{ color: "#64748b" }} />
+              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span className="terminal-live-badge">
+                  <span className="live-pulse-dot" /> LIVE RUNNER
+                </span>
+                <Terminal size={13} style={{ color: "#64748b" }} />
+              </div>
             </div>
 
-            {/* Interactive Suite Tabs Row */}
+            {/* Interactive Suite Tabs Row with Touch Scroll */}
             <div className="terminal-tabs-row">
-              {(Object.keys(testSuites) as SuiteId[]).map((key) => (
-                <button
-                  type="button"
-                  key={key}
-                  className={`terminal-tab-btn ${activeSuite === key ? "active" : ""}`}
-                  onClick={() => handleSelectSuite(key)}
-                  title={`Switch to ${testSuites[key].tabName}`}
-                >
-                  {testSuites[key].tabName}
-                </button>
-              ))}
+              {(Object.keys(testSuites) as SuiteId[]).map((key) => {
+                const s = testSuites[key];
+                const isActive = activeSuite === key;
+                return (
+                  <button
+                    type="button"
+                    key={key}
+                    className={`terminal-tab-btn ${isActive ? "active" : ""}`}
+                    onClick={() => handleSelectSuite(key)}
+                    style={{
+                      borderColor: isActive ? s.badgeColor : undefined,
+                      color: isActive ? "#ffffff" : undefined,
+                    }}
+                    title={`Switch to ${s.tabName}`}
+                  >
+                    <span
+                      style={{
+                        display: "inline-block",
+                        width: "6px",
+                        height: "6px",
+                        borderRadius: "50%",
+                        background: s.badgeColor,
+                        marginRight: "6px",
+                      }}
+                    />
+                    {s.tabName}
+                  </button>
+                );
+              })}
 
               <button
                 type="button"
@@ -279,11 +399,11 @@ export default function Hero() {
               >
                 {isRunning ? (
                   <>
-                    <Loader2 size={11} className="animate-spin" /> Running
+                    <Loader2 size={11} className="animate-spin" /> Running...
                   </>
                 ) : (
                   <>
-                    <Play size={11} fill="currentColor" /> Run Tests
+                    <Play size={11} fill="currentColor" /> Run Suite
                   </>
                 )}
               </button>
@@ -293,17 +413,21 @@ export default function Hero() {
             <div className="terminal-progress-track">
               <div
                 className="terminal-progress-bar"
-                style={{ width: `${progress}%` }}
+                style={{
+                  width: `${progress}%`,
+                  background: `linear-gradient(90deg, ${currentSuite.badgeColor}, #38bdf8)`,
+                }}
               />
             </div>
 
             {/* Terminal Body */}
             <div className="terminal-body">
               <div className="terminal-command">
-                $ <span>{currentSuite.command}</span>
+                <span style={{ color: currentSuite.badgeColor }}>$</span>{" "}
+                <span>{currentSuite.command}</span>
               </div>
-              <div style={{ color: "#94a3b8", fontSize: "0.7rem", marginBottom: "8px" }}>
-                {isRunning ? "Running tests..." : "Suite ready:"}
+              <div className="terminal-status-lead">
+                {isRunning ? "Executing automated test suite..." : "Ready to execute · 3 specs loaded"}
               </div>
 
               {currentSuite.specs.map((spec, index) => {
@@ -321,18 +445,37 @@ export default function Hero() {
                           : "terminal-row-pending"
                     }`}
                   >
-                    <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: "6px", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
                       {isPassed ? (
-                        <CheckCircle2 size={13} />
+                        <CheckCircle2 size={13} style={{ color: currentSuite.badgeColor, flexShrink: 0 }} />
                       ) : isCurrent ? (
-                        <Loader2 size={12} className="animate-spin" />
+                        <Loader2 size={12} className="animate-spin" style={{ color: "#38bdf8", flexShrink: 0 }} />
                       ) : (
-                        <span style={{ opacity: 0.5 }}>○</span>
+                        <span style={{ opacity: 0.4, flexShrink: 0 }}>○</span>
                       )}
-                      <span>{spec.name}</span>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{spec.name}</span>
                     </span>
-                    <span className="terminal-time">
-                      {isPassed ? spec.time : isCurrent ? "running..." : "pending"}
+
+                    <span className="terminal-time" style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
+                      {isPassed ? (
+                        <>
+                          <span
+                            className="spec-tag"
+                            style={{
+                              color: currentSuite.badgeColor,
+                              background: `${currentSuite.badgeColor}15`,
+                              borderColor: `${currentSuite.badgeColor}30`,
+                            }}
+                          >
+                            {spec.status}
+                          </span>
+                          <span>{spec.time}</span>
+                        </>
+                      ) : isCurrent ? (
+                        <span style={{ color: "#38bdf8" }}>evaluating...</span>
+                      ) : (
+                        <span>queued</span>
+                      )}
                     </span>
                   </div>
                 );
@@ -340,15 +483,19 @@ export default function Hero() {
 
               <div className="terminal-summary-bar">
                 <span>
-                  {isRunning
-                    ? "Running test suite..."
-                    : `PASS ${currentSuite.specs.length} specs · All passed`}
+                  {isRunning ? (
+                    <span style={{ color: "#38bdf8" }}>Running specs...</span>
+                  ) : (
+                    <span>
+                      <strong style={{ color: currentSuite.badgeColor }}>PASS</strong> 3 specs passed
+                    </span>
+                  )}
                 </span>
-                <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                <span className="terminal-exit-pill">
                   {isRunning ? (
                     <span style={{ color: "#38bdf8" }}>RUNNING</span>
                   ) : (
-                    <span>EXIT 0</span>
+                    <span style={{ color: "#34d399" }}>EXIT CODE 0</span>
                   )}
                 </span>
               </div>
@@ -356,6 +503,34 @@ export default function Hero() {
           </div>
         </motion.div>
       </div>
+
+      {/* 4-Card Quick Impact & Metrics Strip */}
+      <motion.div className="hero-stats-strip" {...fadeInUp(0.55)}>
+        {impactMetrics.map((item) => {
+          const Icon = item.icon;
+          return (
+            <div className="hero-stat-card" key={item.label}>
+              <div className="hero-stat-card-top">
+                <span className="hero-stat-num" style={{ color: item.color }}>
+                  {item.value}
+                </span>
+                <div
+                  className="hero-stat-icon-wrap"
+                  style={{
+                    color: item.color,
+                    background: `${item.color}14`,
+                    borderColor: `${item.color}28`,
+                  }}
+                >
+                  <Icon size={16} />
+                </div>
+              </div>
+              <div className="hero-stat-label">{item.label}</div>
+              <div className="hero-stat-sub">{item.desc}</div>
+            </div>
+          );
+        })}
+      </motion.div>
     </section>
   );
 }

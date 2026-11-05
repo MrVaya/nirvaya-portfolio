@@ -2,18 +2,24 @@
 
 import { useState } from "react";
 import {
+  Briefcase,
+  Building2,
   Calendar,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
   Database,
+  ExternalLink,
   FileCheck,
   FileSpreadsheet,
   FileText,
+  Layers,
+  MapPin,
   Receipt,
   Send,
   ShieldCheck,
   Terminal,
+  Zap,
 } from "lucide-react";
 
 interface QABullet {
@@ -23,16 +29,18 @@ interface QABullet {
 
 const qaCompetencies = [
   {
-    title: "Manual & Exploratory Testing",
+    title: "Manual & Exploratory QA",
     tag: "Smoke · Edge Cases · Cross-Browser",
     icon: CheckCircle2,
+    accent: "#38bdf8",
     description:
-      "Performed smoke, exploratory, and cross-browser testing across Chrome, Firefox, and Safari on USPS, NRCS Blood Bank, and NIMS, catching edge cases before releases.",
+      "Performed smoke, exploratory, and edge-case testing on USPS, NRCS Blood Bank, and NIMS, catching boundary defects before releases reached production.",
   },
   {
     title: "Playwright Automation",
     tag: "TypeScript · Page Object Model (POM)",
     icon: Terminal,
+    accent: "#10b981",
     description:
       "Wrote and maintained automated regression suites in Playwright with TypeScript using Page Object Model (POM) for core user flows across postal tracking, blood bank inventory, and student portals.",
   },
@@ -40,15 +48,17 @@ const qaCompetencies = [
     title: "REST API Testing",
     tag: "60+ Endpoints · Postman & Swagger",
     icon: Send,
+    accent: "#fb923c",
     description:
-      "Tested 60+ RESTful APIs in Postman against Swagger docs, validating status codes, JSON response data, and negative 4xx/5xx error handling.",
+      "Tested 60+ RESTful APIs in Postman against Swagger docs, validating status codes, JSON response payloads, and negative 4xx/5xx error handling.",
   },
   {
     title: "Oracle SQL, Jenkins & Unix",
     tag: "DB Checks · CI Runs · Server Logs",
     icon: Database,
+    accent: "#a855f7",
     description:
-      "Wrote Oracle SQL queries to check database records on USPS transactions, ran test jobs in Jenkins, and used Unix commands to inspect server logs.",
+      "Wrote Oracle SQL queries to check database records on USPS transactions, ran test jobs in Jenkins, and used Unix shell commands to inspect server logs.",
   },
 ];
 
@@ -80,22 +90,21 @@ const qaDetailedResponsibilities: QABullet[] = [
 ];
 
 const qaSkills = [
-  "Manual Testing",
-  "Smoke Testing",
-  "Exploratory Testing",
-  "Cross-Browser Testing",
-  "Playwright",
-  "TypeScript",
-  "JavaScript",
-  "Page Object Model (POM)",
-  "E2E Automation",
-  "Postman",
-  "Swagger",
-  "Oracle SQL",
-  "Jenkins",
-  "Unix",
-  "Jira",
-  "ClickUp",
+  { name: "Manual Testing", color: "#38bdf8" },
+  { name: "Smoke Testing", color: "#38bdf8" },
+  { name: "Exploratory Testing", color: "#38bdf8" },
+  { name: "Edge-Case Identification", color: "#38bdf8" },
+  { name: "Playwright", color: "#10b981" },
+  { name: "TypeScript", color: "#38bdf8" },
+  { name: "Page Object Model (POM)", color: "#10b981" },
+  { name: "E2E Automation", color: "#10b981" },
+  { name: "Postman", color: "#fb923c" },
+  { name: "Swagger", color: "#fb923c" },
+  { name: "Oracle SQL", color: "#f59e0b" },
+  { name: "Jenkins", color: "#ef4444" },
+  { name: "Unix", color: "#a855f7" },
+  { name: "Jira", color: "#38bdf8" },
+  { name: "ClickUp", color: "#a855f7" },
 ];
 
 const financeAreas = [
@@ -137,7 +146,7 @@ export default function Experience() {
           <span />
           01 / Experience
         </div>
-        <h2>Experience.</h2>
+        <h2>Work Experience.</h2>
         <p>
           Quality assurance experience testing USPS at TechStaffing Hub, and Nepal Red Cross Society Blood Bank and NIMS educational platform at Skybase — supported by an operational background in administration and finance.
         </p>
@@ -157,18 +166,29 @@ export default function Experience() {
               <div className="timeline-card-header">
                 <div className="timeline-header-top-row">
                   <div className="timeline-role-title-group">
-                    <div className="timeline-badges-wrap" style={{ marginBottom: "6px" }}>
+                    <div className="timeline-badges-wrap" style={{ marginBottom: "8px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
                       <span className="discipline-badge discipline-badge-qa">
                         <span className="live-pulse-dot" />
-                        QA &amp; Automation Testing
+                        Primary Focus · Quality Assurance &amp; Automation
+                      </span>
+                      <span className="discipline-badge" style={{ background: "rgba(56, 189, 248, 0.1)", color: "#38bdf8", borderColor: "rgba(56, 189, 248, 0.25)" }}>
+                        3 Systems Tested
                       </span>
                     </div>
-                    <h3>QA Engineer / Software Tester</h3>
-                    <p className="timeline-role-meta-text">
-                      <span className="timeline-company-name">TechStaffing Hub &amp; Skybase</span>
-                      <span className="timeline-meta-dot">·</span>
-                      <span className="timeline-category-label">Software Quality Assurance</span>
-                    </p>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "4px" }}>
+                      <div className="company-avatar-box avatar-techstaffing-skybase">
+                        <span>QA</span>
+                      </div>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: "1.45rem", color: "#ffffff" }}>QA Engineer / Software Tester</h3>
+                        <p className="timeline-role-meta-text" style={{ margin: "4px 0 0" }}>
+                          <strong className="timeline-company-name">TechStaffing Hub &amp; Skybase</strong>
+                          <span className="timeline-meta-dot">·</span>
+                          <span className="timeline-category-label">USPS, NRCS Blood Bank, NIMS</span>
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="timeline-meta-tags">
@@ -180,7 +200,7 @@ export default function Experience() {
                 </div>
 
                 <p className="role-summary-copy">
-                  Tested applications like USPS at TechStaffing Hub, and Nepal Red Cross Society Blood Bank and NIMS at Skybase. Built automated E2E tests with Playwright, tested 60+ APIs in Postman against Swagger docs, verified database records with Oracle SQL, and worked with Jenkins on Unix.
+                  Tested applications like <strong>USPS</strong> at TechStaffing Hub, and <strong>Nepal Red Cross Society Blood Bank</strong> and <strong>NIMS</strong> at Skybase. Built automated E2E tests with Playwright, tested 60+ APIs in Postman against Swagger docs, verified database records with Oracle SQL, and worked with Jenkins on Unix.
                 </p>
               </div>
 
@@ -189,14 +209,30 @@ export default function Experience() {
                 {qaCompetencies.map((comp) => {
                   const Icon = comp.icon;
                   return (
-                    <div className="competency-item-card" key={comp.title} role="listitem">
+                    <div
+                      className="competency-item-card"
+                      key={comp.title}
+                      role="listitem"
+                      style={{
+                        borderColor: "rgba(255, 255, 255, 0.08)",
+                      }}
+                    >
                       <div className="competency-card-top">
-                        <div className="competency-icon-box">
+                        <div
+                          className="competency-icon-box"
+                          style={{
+                            background: `${comp.accent}14`,
+                            color: comp.accent,
+                            border: `1px solid ${comp.accent}28`,
+                          }}
+                        >
                           <Icon size={16} />
                         </div>
                         <div>
                           <h4>{comp.title}</h4>
-                          <span className="competency-micro-tag">{comp.tag}</span>
+                          <span className="competency-micro-tag" style={{ color: comp.accent }}>
+                            {comp.tag}
+                          </span>
                         </div>
                       </div>
                       <p>{comp.description}</p>
@@ -221,7 +257,7 @@ export default function Experience() {
                     <span>
                       {showQAResponsibilities
                         ? "Hide Detailed Responsibilities"
-                        : "View What I Did Day-to-Day (6 Areas)"}
+                        : "View What I Did Day-to-Day across USPS, NRCS & NIMS"}
                     </span>
                   </span>
                   <span className="expand-toggle-icon">
@@ -252,8 +288,19 @@ export default function Experience() {
               {/* Skills Footer */}
               <div className="timeline-skills-footer">
                 {qaSkills.map((skill) => (
-                  <span className="badge-chip" key={skill}>
-                    {skill}
+                  <span
+                    className="badge-chip hero-colored-chip"
+                    key={skill.name}
+                    style={{
+                      borderColor: `${skill.color}30`,
+                      background: `${skill.color}0a`,
+                    }}
+                  >
+                    <span
+                      className="chip-dot"
+                      style={{ background: skill.color }}
+                    />
+                    {skill.name}
                   </span>
                 ))}
               </div>
@@ -270,17 +317,25 @@ export default function Experience() {
               <div className="timeline-card-header">
                 <div className="timeline-header-top-row">
                   <div className="timeline-role-title-group">
-                    <div className="timeline-badges-wrap" style={{ marginBottom: "6px" }}>
+                    <div className="timeline-badges-wrap" style={{ marginBottom: "8px" }}>
                       <span className="discipline-badge discipline-badge-finance">
-                        Secondary Background · Operations
+                        Secondary Operational Background
                       </span>
                     </div>
-                    <h3 style={{ fontSize: "1.2rem" }}>Admin &amp; Finance Officer</h3>
-                    <p className="timeline-role-meta-text">
-                      <span className="timeline-company-name">CWES Nepal</span>
-                      <span className="timeline-meta-dot">·</span>
-                      <span className="timeline-category-label">Financial Administration &amp; Operations</span>
-                    </p>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", marginTop: "4px" }}>
+                      <div className="company-avatar-box avatar-cwes">
+                        <span>CW</span>
+                      </div>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: "1.2rem", color: "#ffffff" }}>Admin &amp; Finance Officer</h3>
+                        <p className="timeline-role-meta-text" style={{ margin: "4px 0 0" }}>
+                          <strong className="timeline-company-name">CWES Nepal</strong>
+                          <span className="timeline-meta-dot">·</span>
+                          <span className="timeline-category-label">Financial Administration &amp; Operations</span>
+                        </p>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="timeline-meta-tags">

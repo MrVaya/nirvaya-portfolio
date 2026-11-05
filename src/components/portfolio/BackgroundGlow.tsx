@@ -6,6 +6,7 @@ export default function BackgroundGlow() {
       <div className="tech-grid" />
       <div className="ambient-beam ambient-beam-primary" />
       <div className="ambient-beam ambient-beam-emerald" />
+      <div className="ambient-beam ambient-beam-violet" />
     </div>
   );
 }
