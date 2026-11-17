@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import {
+  AlertCircle,
   ArrowRight,
   Check,
   Copy,
+  ExternalLink,
+  Loader2,
   Mail,
   MapPin,
   Send,
@@ -35,8 +38,15 @@ const quickTemplates = [
 
 export default function Contact() {
   const [copied, setCopied] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const [formData, setFormData] = useState({ name: "", email: "", subject: "", message: "" });
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+  });
 
   const handleCopy = () => {
     navigator.clipboard.writeText("nirvaya22@gmail.com");
@@ -48,10 +58,73 @@ export default function Contact() {
     setFormData((prev) => ({ ...prev, subject }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const getMailtoUrl = () => {
+    const subject = encodeURIComponent(
+      formData.subject || `QA Inquiry from ${formData.name || "Portfolio Visitor"}`
+    );
+    const body = encodeURIComponent(
+      `Hello Nirvaya,\n\nName: ${formData.name}\nEmail: ${formData.email}\n\nMessage:\n${formData.message}\n`
+    );
+    return `mailto:nirvaya22@gmail.com?subject=${subject}&body=${body}`;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.email) return;
-    setSubmitted(true);
+    if (!formData.name || !formData.email || !formData.message) return;
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
+
+    try {
+      // 1. Try submitting through our Next.js API route first (which relays directly to FormSubmit)
+      const res = await fetch("/api/v1/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (res.ok && data?.success) {
+        setSubmitted(true);
+        return;
+      }
+
+      // 2. Direct client fallback if API route encountered issues
+      const directRes = await fetch("https://formsubmit.co/ajax/nirvaya22@gmail.com", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          _subject: formData.subject || `[QA Inquiry] New message from ${formData.name}`,
+          message: formData.message,
+          _captcha: "false",
+          _template: "table",
+        }),
+      });
+
+      const directData = await directRes.json().catch(() => null);
+
+      if (directRes.ok && (directData?.success === "true" || directData?.success === true)) {
+        setSubmitted(true);
+      } else {
+        throw new Error(data?.error || directData?.message || "Could not deliver email.");
+      }
+    } catch (err: unknown) {
+      console.error("Contact send error:", err);
+      setErrorMessage(
+        "Could not send automatically via the form service. You can send directly using your email client with the button below."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -77,7 +150,15 @@ export default function Contact() {
                   <span>nirvaya22@gmail.com</span>
                 </div>
                 {copied ? (
-                  <span style={{ color: "#34d399", fontSize: "0.75rem", display: "flex", alignItems: "center", gap: "4px" }}>
+                  <span
+                    style={{
+                      color: "#34d399",
+                      fontSize: "0.75rem",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "4px",
+                    }}
+                  >
                     <Check size={14} /> Copied!
                   </span>
                 ) : (
@@ -145,40 +226,70 @@ export default function Contact() {
                 <div
                   style={{
                     display: "grid",
-                    width: "56px",
-                    height: "56px",
+                    width: "60px",
+                    height: "60px",
                     placeItems: "center",
                     borderRadius: "50%",
                     background: "rgba(16, 185, 129, 0.15)",
+                    border: "1px solid rgba(16, 185, 129, 0.35)",
                     color: "#34d399",
                     marginBottom: "20px",
+                    boxShadow: "0 0 24px rgba(16, 185, 129, 0.2)",
                   }}
                 >
-                  <Check size={28} />
+                  <Check size={32} />
                 </div>
-                <h3 style={{ color: "#ffffff", fontSize: "1.4rem", margin: "0 0 10px" }}>
-                  Message Received
+                <h3 style={{ color: "#ffffff", fontSize: "1.45rem", margin: "0 0 10px" }}>
+                  Message Sent Successfully!
                 </h3>
-                <p style={{ color: "#94a3b8", fontSize: "0.9rem", maxWidth: "340px", margin: "0 0 24px" }}>
-                  Thank you, {formData.name}. I have received your note and will get back to you
-                  within 1 business day.
-                </p>
-                <button
-                  className="btn btn-secondary"
-                  type="button"
-                  onClick={() => {
-                    setSubmitted(false);
-                    setFormData({ name: "", email: "", subject: "", message: "" });
+                <p
+                  style={{
+                    color: "#94a3b8",
+                    fontSize: "0.92rem",
+                    maxWidth: "360px",
+                    margin: "0 0 24px",
+                    lineHeight: 1.6,
                   }}
                 >
-                  Send Another Message
-                </button>
+                  Thank you, <strong style={{ color: "#ffffff" }}>{formData.name}</strong>. Your note
+                  has been sent directly to <span style={{ color: "#38bdf8" }}>nirvaya22@gmail.com</span>.
+                  I will get back to you within 1 business day.
+                </p>
+                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center" }}>
+                  <button
+                    className="btn btn-secondary"
+                    type="button"
+                    onClick={() => {
+                      setSubmitted(false);
+                      setFormData({ name: "", email: "", subject: "", message: "" });
+                    }}
+                  >
+                    Send Another Note
+                  </button>
+                  <a
+                    className="btn btn-secondary"
+                    href={getMailtoUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <ExternalLink size={14} /> Open in Email App
+                  </a>
+                </div>
               </div>
             ) : (
               <form className="contact-form" onSubmit={handleSubmit}>
                 {/* Quick Topic Chips */}
                 <div style={{ marginBottom: "16px" }}>
-                  <span style={{ fontSize: "0.72rem", color: "#94a3b8", display: "flex", alignItems: "center", gap: "5px", marginBottom: "8px" }}>
+                  <span
+                    style={{
+                      fontSize: "0.72rem",
+                      color: "#94a3b8",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      marginBottom: "8px",
+                    }}
+                  >
                     <Sparkles size={12} style={{ color: "#38bdf8" }} /> Quick Topic:
                   </span>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
@@ -191,7 +302,8 @@ export default function Contact() {
                           cursor: "pointer",
                           borderColor: formData.subject === t.subject ? "#38bdf8" : undefined,
                           color: formData.subject === t.subject ? "#38bdf8" : undefined,
-                          background: formData.subject === t.subject ? "rgba(56, 189, 248, 0.1)" : undefined,
+                          background:
+                            formData.subject === t.subject ? "rgba(56, 189, 248, 0.1)" : undefined,
                         }}
                         onClick={() => handleSelectTemplate(t.subject)}
                       >
@@ -200,6 +312,40 @@ export default function Contact() {
                     ))}
                   </div>
                 </div>
+
+                {errorMessage && (
+                  <div
+                    style={{
+                      padding: "12px 14px",
+                      borderRadius: "8px",
+                      background: "rgba(239, 68, 68, 0.1)",
+                      border: "1px solid rgba(239, 68, 68, 0.3)",
+                      fontSize: "0.82rem",
+                      color: "#fca5a5",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "8px",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                      <AlertCircle size={16} style={{ color: "#ef4444", flexShrink: 0, marginTop: "2px" }} />
+                      <span>{errorMessage}</span>
+                    </div>
+                    <a
+                      href={getMailtoUrl()}
+                      className="btn btn-secondary"
+                      style={{
+                        alignSelf: "flex-start",
+                        fontSize: "0.76rem",
+                        padding: "6px 12px",
+                        height: "auto",
+                      }}
+                    >
+                      <Mail size={13} /> Send via Email Client
+                    </a>
+                  </div>
+                )}
 
                 <div className="form-field">
                   <label htmlFor="form-name">Your Name</label>
@@ -242,15 +388,40 @@ export default function Contact() {
                     id="form-message"
                     rows={4}
                     required
-                    placeholder="Tell me about your product, testing timeline, or operational needs..."
+                    placeholder="Tell me about your product, testing timeline, or QA needs..."
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   />
                 </div>
 
-                <button className="btn btn-primary" type="submit" style={{ width: "100%", marginTop: "8px" }}>
-                  <Send size={15} /> Send Message
-                </button>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "8px" }}>
+                  <button
+                    className="btn btn-primary"
+                    type="submit"
+                    disabled={isSubmitting}
+                    style={{ width: "100%", height: "44px", justifyContent: "center" }}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" /> Sending Message...
+                      </>
+                    ) : (
+                      <>
+                        <Send size={15} /> Send Message
+                      </>
+                    )}
+                  </button>
+
+                  <div style={{ textAlign: "center", fontSize: "0.75rem", color: "#64748b", marginTop: "4px" }}>
+                    Or email directly:{" "}
+                    <a
+                      href={getMailtoUrl()}
+                      style={{ color: "#38bdf8", textDecoration: "underline" }}
+                    >
+                      nirvaya22@gmail.com
+                    </a>
+                  </div>
+                </div>
               </form>
             )}
           </div>
