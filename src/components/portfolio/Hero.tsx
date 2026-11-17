@@ -12,14 +12,12 @@ import {
   Code2,
   Copy,
   Database,
-  GraduationCap,
   Layers,
   Loader2,
   Mail,
   MapPin,
   Play,
   Server,
-  ShieldCheck,
   Sparkles,
   Terminal,
   Zap,
@@ -213,12 +211,7 @@ export default function Hero() {
         <div className="hero-status-left">
           <span className="hero-status-tag">
             <span className="live-pulse-dot" />
-            <span>Open to QA Roles</span>
-          </span>
-
-          <span className="hero-grad-tag">
-            <GraduationCap size={13} style={{ color: "#38bdf8" }} />
-            <span>2026 Graduate</span>
+            <span>Open to QA &amp; Software Testing Roles</span>
           </span>
         </div>
 
@@ -236,7 +229,11 @@ export default function Hero() {
       <div className="hero-grid">
         {/* Left Column: Clear Humanized Intro */}
         <div className="hero-copy">
-          <motion.div className="hero-eyebrow-chip" style={{ width: "fit-content", alignSelf: "flex-start" }} {...fadeInUp(0.15)}>
+          <motion.div
+            className="hero-eyebrow-chip"
+            style={{ width: "fit-content", alignSelf: "flex-start" }}
+            {...fadeInUp(0.15)}
+          >
             <Sparkles size={13} style={{ color: "#38bdf8" }} />
             <span>Practical Quality Assurance &amp; Test Automation</span>
           </motion.div>
@@ -255,7 +252,7 @@ export default function Hero() {
 
           <motion.div className="hero-description" {...fadeInUp(0.35)}>
             <p className="hero-desc-lead">
-              2026 graduate building reliable software through thoughtful manual testing, Playwright automation, and clear defect reporting.
+              Building reliable software through thoughtful manual testing, Playwright automation, and clear defect reporting.
             </p>
             <p className="hero-desc-sub">
               Hands-on testing experience on <strong>USPS</strong> at TechStaffing Hub, and <strong>Nepal Red Cross Society Blood Bank</strong> and <strong>NIMS</strong> educational platform at Skybase.
@@ -268,9 +265,6 @@ export default function Hero() {
           <motion.div className="hero-actions" {...fadeInUp(0.4)}>
             <a className="btn btn-primary" href="#projects">
               View Projects <ArrowDown size={16} />
-            </a>
-            <a className="btn btn-secondary" href="#playbook">
-              <ShieldCheck size={16} /> QA Mindset
             </a>
             <a className="btn btn-secondary" href="#contact">
               <Mail size={16} /> Contact Me

@@ -7,7 +7,6 @@ import {
   Download,
   FileDown,
   Menu,
-  ShieldCheck,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -29,7 +28,6 @@ function GitHubIcon({ size = 16 }: { size?: number }) {
 }
 
 const links = [
-  { label: "Mindset", href: "#playbook" },
   { label: "Experience", href: "#experience" },
   { label: "Projects", href: "#projects" },
   { label: "Skills", href: "#skills" },
@@ -133,12 +131,12 @@ export default function Navbar() {
               <div className="mobile-nav-status">
                 <span className="status-pill" style={{ width: "100%", justifyContent: "center" }}>
                   <span className="status-pill-dot" />
-                  <span>Open to QA &amp; Software Testing Roles · 2026</span>
+                  <span>Open to QA &amp; Software Testing Roles</span>
                 </span>
               </div>
 
               <nav className="mobile-nav-links" aria-label="Mobile navigation">
-                {links.map((link, idx) => (
+                {links.map((link) => (
                   <a
                     key={link.label}
                     href={link.href}
