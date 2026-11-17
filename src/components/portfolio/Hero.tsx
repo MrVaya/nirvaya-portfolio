@@ -236,7 +236,7 @@ export default function Hero() {
       <div className="hero-grid">
         {/* Left Column: Clear Humanized Intro */}
         <div className="hero-copy">
-          <motion.div className="hero-eyebrow-chip" {...fadeInUp(0.15)}>
+          <motion.div className="hero-eyebrow-chip" style={{ width: "fit-content", alignSelf: "flex-start" }} {...fadeInUp(0.15)}>
             <Sparkles size={13} style={{ color: "#38bdf8" }} />
             <span>Practical Quality Assurance &amp; Test Automation</span>
           </motion.div>

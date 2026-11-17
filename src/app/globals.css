@@ -422,10 +422,10 @@ a {
 .hero-section {
   position: relative;
   min-height: calc(100vh - 72px);
-  padding: 115px 0 60px;
+  padding: 135px 0 80px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   width: 100%;
 }
 
@@ -3084,8 +3084,9 @@ a {
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 28px;
-  padding: 8px 18px;
+  margin-top: 10px;
+  margin-bottom: 38px;
+  padding: 10px 22px;
   background: rgba(15, 18, 24, 0.75);
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 999px;
@@ -3157,17 +3158,20 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 12px;
-  border-radius: 6px;
+  padding: 5px 14px;
+  border-radius: 8px;
   background: rgba(56, 189, 248, 0.08);
-  border: 1px solid rgba(56, 189, 248, 0.2);
+  border: 1px solid rgba(56, 189, 248, 0.22);
   color: #38bdf8;
   font-family: var(--font-mono);
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  width: fit-content;
+  align-self: flex-start;
+  max-width: max-content;
 }
 
 .hero-skills-headline {
@@ -3230,7 +3234,8 @@ a {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
-  margin-top: 48px;
+  margin-top: 54px;
+  margin-bottom: 24px;
 }
 
 @media (max-width: 960px) {
